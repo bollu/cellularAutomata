@@ -1,0 +1,74 @@
+body {
+  font-family: "Roboto", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #FCFCFC;
+}
+
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.9rem; }
+h3 { font-size: 1.7rem; }
+h4,
+h5,
+h6 { font-size: 1.5rem; }
+
+img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+  border: 0;
+}
+
+header,
+footer {
+  margin: 4rem 0;
+  text-align: center;
+}
+
+main {
+  margin: 4rem 0;
+}
+
+.container {
+  width: 90%;
+  max-width: 600px;
+}
+
+.header-logo img {
+  border-radius: 50%;
+  border: 4px solid #E1E1E1;
+}
+
+.header-logo img:hover {
+  border-color: #F1F1F1;
+}
+
+.site-title {
+  margin-top: 2rem;
+}
+
+.entry-title {
+  margin-bottom: 0;
+}
+
+.entry-title a {
+  text-decoration: none;
+}
+
+.entry-meta {
+  display: inline-block;
+  margin-bottom: 2rem;
+  font-size: 1.7rem;
+  color: #888;
+}
+
+.footer-link {
+  margin: 2rem 0;
+}
+
+.hr {
+  height: 1px;
+  margin: 2rem 0;
+  background: #E1E1E1;
+  background: -webkit-gradient(linear, left top, right top, from(white), color-stop(#E1E1E1), to(white));
+  background: -webkit-linear-gradient(left, white, #E1E1E1, white);
+  background: linear-gradient(to right, white, #E1E1E1, white);
+}
