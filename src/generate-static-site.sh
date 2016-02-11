@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
 
-hugo
-scp -r ./public/* ubuntu@www.pixel-druid.com:/www/
+hugo --destination="../"
 # rsync -r --progress ./public/* ubuntu@www.pixel-druid.com:/www/
