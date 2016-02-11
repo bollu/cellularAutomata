@@ -1,0 +1,15 @@
+baseurl = "http://pixel-druid.com/"
+languageCode = "en-us"
+title = "Cellular Automata in Haskell"
+#theme = "purehugo"
+#theme = "cocoa"
+theme = "hugo-zen"
+
+canonifyurls = true
+
+pygmentsuseclasses = true
+# pygmentsstyle = "github"
+
+[params]
+  githubName = "bollu"
+  description = "A weblog of sorts"
