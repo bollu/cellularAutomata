@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 
 module Lib (RingZipper(RingZipper),
             lengthRingZipper,
@@ -28,6 +30,8 @@ import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
 import Data.List --intersperse
+import Data.Function.Memoize
+
 -- or:
 -- import Diagrams.Backend.xxx.CmdLine
 -- where xxx is the backend you would like to use.
@@ -38,11 +42,13 @@ data RingZipper a = RingZipper {
     after  :: [a]
 } deriving(Functor, Eq)   
 
+deriveMemoizable ''RingZipper
+
 instance Show a => Show (RingZipper a) where
     show z = "!" ++ showElements (before z) ++ showCenterElement (focus z) ++ showElements (Lib.after z) ++ "!"
                 where
                     showElements l = mconcat (intersperse "  " (fmap show l))
-                    showCenterElement = \x -> "  (" ++ show x ++ ")  "
+                    showCenterElement x =  "  (" ++ show x ++ ")  "
 
 lengthRingZipper :: RingZipper a -> Int
 lengthRingZipper z = length (before z) + 1 + length (Lib.after z)
@@ -124,8 +130,10 @@ editRingZipper RingZipper{..} f = RingZipper {
 
 newtype Univ a = Univ (RingZipper (RingZipper a)) deriving(Eq)
 
+deriveMemoizable ''Univ
+
 instance (Show a) => Show (Univ a) where
-    show (Univ (RingZipper{..})) = " " ++ showLines before ++ showCenterLine focus ++ showLines after where
+    show (Univ RingZipper{..}) = " " ++ showLines before ++ showCenterLine focus ++ showLines after where
             showLines l = mconcat $ intersperse "\n " (fmap show l) 
             showCenterLine = \x -> "\n(" ++ show x ++ ")\n "
 
@@ -134,17 +142,24 @@ instance Functor Univ where
 
 
 
-shiftRightUniv :: Univ a -> Univ a
-shiftRightUniv (Univ(univ)) = Univ(fmap shiftRight univ)
+shiftRightUniv' :: Univ a -> Univ a
+shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
 
-shiftLeftUniv :: Univ a -> Univ a
-shiftLeftUniv (Univ(univ)) = Univ(fmap shiftLeft univ)
+shiftRightUniv = memoize shiftRightUniv'
 
-shiftUpUniv :: Univ a -> Univ a
-shiftUpUniv (Univ univ) = Univ(shiftLeft univ)
 
-shiftDownUniv :: Univ a -> Univ a
-shiftDownUniv (Univ univ) = Univ(shiftRight univ)
+shiftLeftUniv' :: Univ a -> Univ a
+shiftLeftUniv' (Univ univ) = Univ(fmap shiftLeft univ)
+
+shiftLeftUniv = memoize shiftLeftUniv'
+
+shiftUpUniv' :: Univ a -> Univ a
+shiftUpUniv' (Univ univ) = Univ(shiftLeft univ)
+shiftUpUniv = memoize shiftUpUniv'
+
+shiftDownUniv' :: Univ a -> Univ a
+shiftDownUniv' (Univ univ) = Univ(shiftRight univ)
+shiftDownUniv = memoize shiftDownUniv'
 
 
 instance Comonad Univ where
@@ -189,7 +204,7 @@ type InnerDim = Int
 
 
 makeUniv :: Dim -> (OuterDim -> InnerDim -> a) -> Univ a
-makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (\innerDim -> f outerDim innerDim))
+makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f outerDim))
 
 
 
@@ -207,8 +222,6 @@ getNeighbours univ = [extract . shiftUpUniv $ univ,
 editUniverse :: Univ a -> (a -> a) -> Univ a 
 editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper zip f)
 
-
-
 --class Comonad u => CellularAutomata (u a) where
 --    render :: u -> Diagram B
 --    step :: u -> a
@@ -222,7 +235,7 @@ data Comonad u => CellularAutomata u a = CellularAutomata {
 
 type Steps = Int
 mkCAGif :: Comonad u => CellularAutomata u a -> u a -> Steps -> [(QDiagram B V2 Double Any, Int)]
-mkCAGif ca seed stepsOut = zip renderedSteps (take stepsOut (repeat (10 :: Int))) where
+mkCAGif ca seed stepsOut = zip renderedSteps (replicate stepsOut  (10 :: Int)) where
     renderedSteps = fmap (renderUniv ca) us
-    stepUniv u = u =>> (stepCell ca)
+    stepUniv u = u =>> stepCell ca
     us = iterate stepUniv seed

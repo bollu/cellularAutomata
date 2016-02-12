@@ -25,7 +25,8 @@ library
                        diagrams-cairo,
                        comonad,
                        colour,
-                       active
+                       active,
+                       memoize
 
   default-language:    Haskell2010
 
