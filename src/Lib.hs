@@ -18,6 +18,7 @@ module Lib (RingZipper(RingZipper),
             Univ(Univ),
             makeUniv,
             getNeighbours,
+            getNeighboursMemo,
             CellularAutomata(CellularAutomata, stepCell, renderUniv),
             mkCAGif) where
 
@@ -132,7 +133,7 @@ newtype Univ a = Univ (RingZipper (RingZipper a)) deriving(Eq)
 
 deriveMemoizable ''Univ
 
-instance (Show a) => Show (Univ a) where
+instance Show a => Show (Univ a) where
     show (Univ RingZipper{..}) = " " ++ showLines before ++ showCenterLine focus ++ showLines after where
             showLines l = mconcat $ intersperse "\n " (fmap show l) 
             showCenterLine = \x -> "\n(" ++ show x ++ ")\n "
@@ -145,22 +146,35 @@ instance Functor Univ where
 shiftRightUniv' :: Univ a -> Univ a
 shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
 
-shiftRightUniv = memoize shiftRightUniv'
+shiftRightUniv = shiftRightUniv'
+
+shiftRightUnivMemo :: Memoizable a =>  Univ a -> Univ a
+shiftRightUnivMemo = memoize shiftRightUniv'
 
 
 shiftLeftUniv' :: Univ a -> Univ a
 shiftLeftUniv' (Univ univ) = Univ(fmap shiftLeft univ)
 
-shiftLeftUniv = memoize shiftLeftUniv'
+shiftLeftUniv = shiftLeftUniv'
+
+shiftLeftUnivMemo :: Memoizable a => Univ a -> Univ a
+shiftLeftUnivMemo = memoize shiftLeftUniv'
 
 shiftUpUniv' :: Univ a -> Univ a
 shiftUpUniv' (Univ univ) = Univ(shiftLeft univ)
-shiftUpUniv = memoize shiftUpUniv'
+
+shiftUpUniv = shiftUpUniv'
+
+shiftUpUnivMemo :: Memoizable a => Univ a -> Univ a
+shiftUpUnivMemo = memoize shiftUpUniv'
 
 shiftDownUniv' :: Univ a -> Univ a
 shiftDownUniv' (Univ univ) = Univ(shiftRight univ)
-shiftDownUniv = memoize shiftDownUniv'
 
+shiftDownUniv = shiftDownUniv'
+
+shiftDownUnivMemo :: Memoizable a => Univ a -> Univ a
+shiftDownUnivMemo = memoize shiftDownUniv'
 
 instance Comonad Univ where
     extract (Univ univ) = extract $ extract univ
@@ -218,6 +232,15 @@ getNeighbours univ = [extract . shiftUpUniv $ univ,
                       extract . shiftLeftUniv $ univ,
                       extract . shiftUpUniv . shiftLeftUniv $ univ]
 
+getNeighboursMemo :: Memoizable a => Univ a -> [a]
+getNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
+                      extract . shiftUpUnivMemo . shiftRightUnivMemo $ univ,
+                      extract . shiftRightUnivMemo $ univ,
+                      extract . shiftDownUnivMemo . shiftRightUnivMemo $ univ,
+                      extract . shiftDownUnivMemo $ univ,
+                      extract . shiftDownUnivMemo . shiftLeftUnivMemo $ univ,
+                      extract . shiftLeftUnivMemo $ univ,
+                      extract . shiftUpUnivMemo . shiftLeftUniv $ univ]
 
 editUniverse :: Univ a -> (a -> a) -> Univ a 
 editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper zip f)
@@ -228,7 +251,7 @@ editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper 
 
 -- u = universe
 -- a = smaller piece
-data Comonad u => CellularAutomata u a = CellularAutomata {
+data CellularAutomata u a = CellularAutomata {
     renderUniv :: u a -> Diagram B,
     stepCell :: u a -> a
 }

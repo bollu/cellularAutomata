@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module GameOfLife where
 
 import Lib
@@ -7,12 +9,14 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
-
+import Data.Function.Memoize
 data Cell = On | Off deriving(Eq)
+
+deriveMemoizable ''Cell
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = sum $ fmap (\c -> if c == On then 1 else 0) (getNeighbours grid)
+liveNeighbourCount grid = sum $ fmap (\c -> if c == On then 1 else 0) (getNeighboursMemo grid)
 
 stepCell :: Grid -> Cell
 stepCell grid = 

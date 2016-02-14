@@ -23,7 +23,7 @@ import qualified Seeds
 -- =======
 
 
-gridDim = 50
+gridDim = 10
 startGrid :: Univ GameOfLife.Cell
 startGrid = makeUniv gridDim (\y x -> GameOfLife.bool2cell ((y ^ 13 `mod` 1023 <= 512) && (x ^ 17 `mod` 2047 <= 1000)))
 
