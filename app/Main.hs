@@ -23,8 +23,8 @@ import qualified Seeds
 -- =======
 
 
-gridDim = 10
+gridDim = 20
 startGrid :: Univ GameOfLife.Cell
-startGrid = makeUniv gridDim (\y x -> GameOfLife.bool2cell ((y ^ 13 `mod` 1023 <= 512) && (x ^ 17 `mod` 2047 <= 1000)))
+startGrid = makeUniv gridDim (\y x -> GameOfLife.bool2cell ((y ^ 13 `mod` 1023 <= 512) && (x ^ 17 `mod` 2047 <= 512)))
 
-main = mainWith $ mkCAGif GameOfLife.gameOfLifeCA startGrid 100
+main = mainWith $ mkCAGif GameOfLife.gameOfLifeCA startGrid 20

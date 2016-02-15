@@ -38,8 +38,8 @@ bool2cell True = On
 bool2cell False = Off
 
 cellToDiagram :: Cell -> Diagram B
-cellToDiagram On = (square 1 # fc white)
-cellToDiagram Off = (square 1 # fc black)
+cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
+cellToDiagram Off = (square 1 # fc (sRGB24read "#455A64"))
 
 
 gameOfLifeCA = Lib.CellularAutomata {
