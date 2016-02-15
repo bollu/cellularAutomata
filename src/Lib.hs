@@ -142,7 +142,7 @@ instance Functor Univ where
     fmap f (Univ univ) = Univ((fmap . fmap) f univ)
 
 
-
+-- lyxia help: Use Univ(Univ a) for performance
 shiftRightUniv' :: Univ a -> Univ a
 shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
 
