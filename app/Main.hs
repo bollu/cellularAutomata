@@ -8,6 +8,7 @@ import Lib
 import Diagrams.Backend.Cairo.CmdLine
 import qualified GameOfLife
 import qualified Seeds
+import qualified BriansBrain
 
 -- Seeds
 -- =====
@@ -22,9 +23,17 @@ import qualified Seeds
 -- Life
 -- =======
 
+-- Brians Brain
+-- ============
 
 gridDim = 20
-startGrid :: Univ GameOfLife.Cell
-startGrid = makeUniv gridDim (\y x -> GameOfLife.bool2cell ((y ^ 13 `mod` 1023 <= 512) && (x ^ 17 `mod` 2047 <= 512)))
+startGrid :: Univ BriansBrain.Cell
+startGrid = makeUniv gridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
+                                      then
+                                        if (x ^ 17 `mod` 2047 <= 5)
+                                            then BriansBrain.On
+                                            else BriansBrain.Dying
+                                      else
+                                        BriansBrain.Off)
 
-main = mainWith $ mkCAGif GameOfLife.gameOfLifeCA startGrid 20
+main = mainWith $ mkCAGif BriansBrain.briansBrainCA startGrid 100

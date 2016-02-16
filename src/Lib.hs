@@ -18,7 +18,6 @@ module Lib (RingZipper(RingZipper),
             Univ(Univ),
             makeUniv,
             getNeighbours,
-            getNeighboursMemo,
             CellularAutomata(CellularAutomata, stepCell, renderUniv),
             mkCAGif) where
 
@@ -30,35 +29,43 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
-import Data.List --intersperse
+import qualified Data.List as L--intersperse
 import Data.Function.Memoize
+import Control.Parallel.Strategies
+import Data.Vector as V
 
 -- or:
 -- import Diagrams.Backend.xxx.CmdLine
 -- where xxx is the backend you would like to use.
 
 data RingZipper a = RingZipper {
-    before :: [a],
+    before :: Vector a,
     focus  :: a,
-    after  :: [a]
-} deriving(Functor, Eq)   
+    after  :: Vector a
+} deriving(Eq)
 
-deriveMemoizable ''RingZipper
+instance Functor RingZipper where
+    fmap f RingZipper{..} = RingZipper {
+        before = fmap f (before `using` parTraversable rseq),
+        focus = f focus,
+        after = fmap f (after `using` parTraversable rseq)
+    }  
 
 instance Show a => Show (RingZipper a) where
-    show z = "!" ++ showElements (before z) ++ showCenterElement (focus z) ++ showElements (Lib.after z) ++ "!"
+    show z = "!"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Lib.after z) <> "!"
                 where
-                    showElements l = mconcat (intersperse "  " (fmap show l))
-                    showCenterElement x =  "  (" ++ show x ++ ")  "
+                    --showElements l = folmconcat (L.intersperse "  " (fmap show l))
+                    showElements l = foldl' (\str val -> str <> " " <> show val ) ""  l
+                    showCenterElement x =  "  (" <> show x <> ")  "
 
 lengthRingZipper :: RingZipper a -> Int
-lengthRingZipper z = length (before z) + 1 + length (Lib.after z)
+lengthRingZipper z = V.length (before z) + 1 + V.length (Lib.after z)
 
 focusIndexRingZipper :: RingZipper a -> Int
-focusIndexRingZipper z = length (before z)
+focusIndexRingZipper z = V.length (before z)
 
-mergeRingZipper :: RingZipper a -> [a]
-mergeRingZipper z = before z ++ [focus z] ++ Lib.after z
+mergeRingZipper :: RingZipper a -> V.Vector a
+mergeRingZipper z = V.concat [before z, V.singleton (focus z), Lib.after z]
 
 shiftLeft :: RingZipper a -> RingZipper a
 shiftLeft z = RingZipper {
@@ -68,17 +75,17 @@ shiftLeft z = RingZipper {
     }
     where
         merged = mergeRingZipper z
-        focusAt' = (focusIndexRingZipper z - 1) `mod` (length merged)
+        focusAt' = (focusIndexRingZipper z - 1) `mod` (V.length merged)
         
-        focus' = merged !! focusAt'
+        focus' = merged V.! focusAt'
         before' =   
-            if null (before z)
-                then init merged
-                else init (before z)
+            if V.null (before z)
+                then V.init merged
+                else V.init (before z)
         after' = 
-            if null (before z)
-                then []
-                else (focus z):(Lib.after z)
+            if V.null (before z)
+                then V.empty
+                else V.cons (focus z) (Lib.after z)
 
 
 shiftRight :: RingZipper a -> RingZipper a
@@ -89,17 +96,17 @@ shiftRight z = RingZipper {
     }
     where
         merged  = mergeRingZipper z
-        focusAt' = (focusIndexRingZipper z + 1) `mod` (length merged)
+        focusAt' = (focusIndexRingZipper z + 1) `mod` (V.length merged)
         
-        focus' = merged !! focusAt'
+        focus' = merged V.! focusAt'
         before' =   
-            if null (Lib.after z)
-                then []
-                else (before z) ++ [focus z]
+            if V.null (Lib.after z)
+                then empty
+                else V.snoc (before z) (focus z)
         after' = 
-            if null (Lib.after z)
-                then tail merged
-                else tail (Lib.after z)
+            if V.null (Lib.after z)
+                then V.tail merged
+                else V.tail (Lib.after z)
 
 
 
@@ -117,8 +124,8 @@ instance Comonad RingZipper where
         after = after
     } where
         focusAt = focusIndexRingZipper z
-        before = reverse $ take focusAt $ iterate1 shiftLeft z
-        after = take (lengthRingZipper z - focusAt - 1) $ iterate1 shiftRight z
+        before = V.reverse $ V.iterateN focusAt shiftLeft (shiftLeft z)
+        after = V.iterateN (lengthRingZipper z - focusAt - 1) shiftRight (shiftRight z)
 
 
 editRingZipper :: RingZipper a -> (a -> a) -> RingZipper a
@@ -131,12 +138,12 @@ editRingZipper RingZipper{..} f = RingZipper {
 
 newtype Univ a = Univ (RingZipper (RingZipper a)) deriving(Eq)
 
-deriveMemoizable ''Univ
+-- deriveMemoizable ''Univ
 
 instance Show a => Show (Univ a) where
-    show (Univ RingZipper{..}) = " " ++ showLines before ++ showCenterLine focus ++ showLines after where
-            showLines l = mconcat $ intersperse "\n " (fmap show l) 
-            showCenterLine = \x -> "\n(" ++ show x ++ ")\n "
+    show (Univ RingZipper{..}) = " " <> showLines before <> showCenterLine focus <> showLines after where
+            showLines l = L.foldl' (\str z -> str <> "\n" <> (show z)) ""  l
+            showCenterLine = \x -> "\n(" <> show x <> ")\n "
 
 instance Functor Univ where
     fmap f (Univ univ) = Univ((fmap . fmap) f univ)
@@ -148,8 +155,8 @@ shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
 
 shiftRightUniv = shiftRightUniv'
 
-shiftRightUnivMemo :: Memoizable a =>  Univ a -> Univ a
-shiftRightUnivMemo = memoize shiftRightUniv'
+-- shiftRightUnivMemo :: Memoizable a =>  Univ a -> Univ a
+-- shiftRightUnivMemo = memoize shiftRightUniv'
 
 
 shiftLeftUniv' :: Univ a -> Univ a
@@ -157,24 +164,24 @@ shiftLeftUniv' (Univ univ) = Univ(fmap shiftLeft univ)
 
 shiftLeftUniv = shiftLeftUniv'
 
-shiftLeftUnivMemo :: Memoizable a => Univ a -> Univ a
-shiftLeftUnivMemo = memoize shiftLeftUniv'
+-- shiftLeftUnivMemo :: Memoizable a => Univ a -> Univ a
+-- shiftLeftUnivMemo = memoize shiftLeftUniv'
 
 shiftUpUniv' :: Univ a -> Univ a
 shiftUpUniv' (Univ univ) = Univ(shiftLeft univ)
 
 shiftUpUniv = shiftUpUniv'
 
-shiftUpUnivMemo :: Memoizable a => Univ a -> Univ a
-shiftUpUnivMemo = memoize shiftUpUniv'
+-- shiftUpUnivMemo :: Memoizable a => Univ a -> Univ a
+-- shiftUpUnivMemo = memoize shiftUpUniv'
 
 shiftDownUniv' :: Univ a -> Univ a
 shiftDownUniv' (Univ univ) = Univ(shiftRight univ)
 
 shiftDownUniv = shiftDownUniv'
 
-shiftDownUnivMemo :: Memoizable a => Univ a -> Univ a
-shiftDownUnivMemo = memoize shiftDownUniv'
+-- shiftDownUnivMemo :: Memoizable a => Univ a -> Univ a
+-- shiftDownUnivMemo = memoize shiftDownUniv'
 
 instance Comonad Univ where
     extract (Univ univ) = extract $ extract univ
@@ -191,11 +198,17 @@ instance Comonad Univ where
             after = innerAfters u
 
         }
-        outerBefores =  \x -> reverse $ take outerFocusAt $ iterate1 (fmap shiftUpUniv) x
-        outerAfters = \x -> take (outerLength - outerFocusAt - 1) $ iterate1 (fmap shiftDownUniv) x 
+        outerBefores x = V.reverse $ V.iterateN outerFocusAt (fmap shiftUpUniv) (fmap shiftUpUniv x) 
+        outerAfters x = V.reverse $ V.iterateN outerFocusAt (fmap shiftDownUniv) (fmap shiftDownUniv x) 
 
-        innerBefores = \x -> reverse $ take innerFocusAt $ iterate1 shiftLeftUniv x
-        innerAfters = \x -> take (innerLength - innerFocusAt - 1) $ iterate1 shiftRightUniv x
+        innerBefores x = V.reverse $ V.iterateN innerFocusAt shiftLeftUniv (shiftLeftUniv x)
+        innerAfters x = V.reverse $ V.iterateN (innerLength - innerFocusAt - 1) shiftRightUniv (shiftRightUniv x)
+
+        -- outerBefores =  \x -> reverse $ take outerFocusAt $ iterate1 (fmap shiftUpUniv) x
+        -- outerAfters = \x -> take (outerLength - outerFocusAt - 1) $ iterate1 (fmap shiftDownUniv) x 
+
+        -- innerBefores = \x -> reverse $ take innerFocusAt $ iterate1 shiftLeftUniv x
+        -- innerAfters = \x -> take (innerLength - innerFocusAt - 1) $ iterate1 shiftRightUniv x
 
         outerFocusAt = focusIndexRingZipper univ
         outerLength = lengthRingZipper univ
@@ -206,9 +219,11 @@ type Dim = Int
 -- Dim \in [0, n - 1]
 makeRingZipper :: Dim -> (Dim -> a) -> RingZipper a
 makeRingZipper n f = RingZipper {
-    before = fmap f [0..(center - 1)],
+    -- before = fmap f [0..(center - 1)],
+    before = fmap f (V.enumFromN 0 (center - 1)),
     focus = f center,
-    after = fmap f [(center + 1)..(n - 1)]
+    -- after = fmap f [(center + 1)..(n - 1)]
+    after = fmap f (V.enumFromN (center + 1) (center - 1))
 } where
     center = n `div` 2
 
@@ -222,8 +237,8 @@ makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f o
 
 
 
-getNeighbours :: Univ a -> [a]
-getNeighbours univ = [extract . shiftUpUniv $ univ,
+getNeighbours :: Univ a -> V.Vector a
+getNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
                       extract . shiftUpUniv . shiftRightUniv $ univ,
                       extract . shiftRightUniv $ univ,
                       extract . shiftDownUniv . shiftRightUniv $ univ,
@@ -232,15 +247,15 @@ getNeighbours univ = [extract . shiftUpUniv $ univ,
                       extract . shiftLeftUniv $ univ,
                       extract . shiftUpUniv . shiftLeftUniv $ univ]
 
-getNeighboursMemo :: Memoizable a => Univ a -> [a]
-getNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
-                      extract . shiftUpUnivMemo . shiftRightUnivMemo $ univ,
-                      extract . shiftRightUnivMemo $ univ,
-                      extract . shiftDownUnivMemo . shiftRightUnivMemo $ univ,
-                      extract . shiftDownUnivMemo $ univ,
-                      extract . shiftDownUnivMemo . shiftLeftUnivMemo $ univ,
-                      extract . shiftLeftUnivMemo $ univ,
-                      extract . shiftUpUnivMemo . shiftLeftUniv $ univ]
+-- getNeighboursMemo :: Memoizable a => Univ a -> [a]
+-- getNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
+--                       extract . shiftUpUnivMemo . shiftRightUnivMemo $ univ,
+--                       extract . shiftRightUnivMemo $ univ,
+--                       extract . shiftDownUnivMemo . shiftRightUnivMemo $ univ,
+--                       extract . shiftDownUnivMemo $ univ,
+--                       extract . shiftDownUnivMemo . shiftLeftUnivMemo $ univ,
+--                       extract . shiftLeftUnivMemo $ univ,
+--                      extract . shiftUpUnivMemo . shiftLeftUniv $ univ]
 
 editUniverse :: Univ a -> (a -> a) -> Univ a 
 editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper zip f)
@@ -258,7 +273,7 @@ data CellularAutomata u a = CellularAutomata {
 
 type Steps = Int
 mkCAGif :: Comonad u => CellularAutomata u a -> u a -> Steps -> [(QDiagram B V2 Double Any, Int)]
-mkCAGif ca seed stepsOut = zip renderedSteps (replicate stepsOut  (10 :: Int)) where
-    renderedSteps = fmap (renderUniv ca) us
+mkCAGif ca seed stepsOut = V.toList $ V.zip renderedSteps (V.replicate stepsOut  (10 :: Int)) where
+    renderedSteps = fmap (renderUniv ca) (us `using` parTraversable rseq)
     stepUniv u = u =>> stepCell ca
-    us = iterate stepUniv seed
+    us = V.iterateN stepsOut stepUniv seed

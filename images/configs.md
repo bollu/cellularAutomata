@@ -21,3 +21,23 @@ startGrid = makeUniv gridDim (\y x -> GameOfLife.bool2cell ((y ^ 13 `mod` 1023 <
 
 main = mainWith $ mkCAGif GameOfLife.gameOfLifeCA startGrid 20
 ```
+
+Brians Brain
+------------
+
+```haskell
+
+gridDim = 25
+startGrid :: Univ BriansBrain.Cell
+startGrid = makeUniv gridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
+                                      then
+                                        if (x ^ 17 `mod` 2047 <= 5)
+                                            then BriansBrain.On
+                                            else BriansBrain.Dying
+                                      else
+                                        BriansBrain.Off)
+
+main = mainWith $ mkCAGif BriansBrain.briansBrainCA startGrid 100
+```
+
+

@@ -1,4 +1,6 @@
-module Seeds where
+{-# LANGUAGE TemplateHaskell #-}
+
+module BriansBrain where
 
 import Lib
 import Control.Comonad
@@ -7,11 +9,13 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
-import Data.Colour.SRGB
+import Data.Function.Memoize
 import qualified Data.Vector as V
 
 
-data Cell = On | Off deriving(Eq)
+data Cell = On | Off | Dying deriving(Eq)
+
+deriveMemoizable ''Cell
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int
@@ -21,7 +25,8 @@ stepCell :: Grid -> Cell
 stepCell grid = 
     cell'
     where
-        cell' = if numNeighbours == 2 then On
+        cell' = if cell == Off && numNeighbours == 2 then On
+                else if cell == On then Dying
                 else Off
         cell = extract grid 
         numNeighbours = liveNeighbourCount $ grid
@@ -30,16 +35,14 @@ stepCell grid =
 renderUniv :: Grid -> Diagram B
 renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
 
-bool2cell :: Bool -> Cell
-bool2cell True = On
-bool2cell False = Off
 
 cellToDiagram :: Cell -> Diagram B
 cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
-cellToDiagram Off = (square 1 # fc (sRGB24read "#455A64"))
+cellToDiagram Dying = (square 1 # fc (sRGB24read "#455A64"))
+cellToDiagram Off = (square 1 # fc (sRGB24read "#202020"))
 
 
-seedsCA = Lib.CellularAutomata {
-    Lib.stepCell = Seeds.stepCell,
-    Lib.renderUniv = Seeds.renderUniv
+briansBrainCA = Lib.CellularAutomata {
+    Lib.stepCell = BriansBrain.stepCell,
+    Lib.renderUniv = BriansBrain.renderUniv
 }

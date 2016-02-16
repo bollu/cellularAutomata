@@ -10,13 +10,14 @@ import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
 import Data.Function.Memoize
+import qualified Data.Vector as V
+
 data Cell = On | Off deriving(Eq)
 
-deriveMemoizable ''Cell
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = sum $ fmap (\c -> if c == On then 1 else 0) (getNeighboursMemo grid)
+liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getNeighbours grid)
 
 stepCell :: Grid -> Cell
 stepCell grid = 
@@ -31,7 +32,7 @@ stepCell grid =
                                 
 
 renderUniv :: Grid -> Diagram B
-renderUniv (Univ univ) = gridCat $ map cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
+renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
 
 bool2cell :: Bool -> Cell
 bool2cell True = On
