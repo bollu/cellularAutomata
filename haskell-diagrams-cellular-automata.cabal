@@ -28,6 +28,7 @@ library
                        active,
                        memoize,
                        vector,
+                       vector-strategies,
                        parallel
 
   default-language:    Haskell2010

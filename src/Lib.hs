@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE TemplateHaskell #-}
-
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
 module Lib (RingZipper(RingZipper),
             lengthRingZipper,
@@ -22,7 +22,7 @@ module Lib (RingZipper(RingZipper),
             mkCAGif) where
 
 
-
+import GHC.Generics (Generic)
 import Control.Comonad
 import Diagrams.Prelude
 import Diagrams.Backend.Cairo.CmdLine
@@ -33,6 +33,10 @@ import qualified Data.List as L--intersperse
 import Data.Function.Memoize
 import Control.Parallel.Strategies
 import Data.Vector as V
+import Data.Vector.Strategies
+
+numParChunks :: Int
+numParChunks = 10
 
 -- or:
 -- import Diagrams.Backend.xxx.CmdLine
@@ -42,7 +46,7 @@ data RingZipper a = RingZipper {
     before :: Vector a,
     focus  :: a,
     after  :: Vector a
-} deriving(Eq)
+} deriving(Eq, Generic, NFData)
 
 instance Functor RingZipper where
     fmap f RingZipper{..} = RingZipper {
@@ -199,10 +203,10 @@ instance Comonad Univ where
 
         }
         outerBefores x = V.reverse $ V.iterateN outerFocusAt (fmap shiftUpUniv) (fmap shiftUpUniv x) 
-        outerAfters x = V.reverse $ V.iterateN outerFocusAt (fmap shiftDownUniv) (fmap shiftDownUniv x) 
+        outerAfters x = V.iterateN (outerLength - outerFocusAt - 1) (fmap shiftDownUniv) (fmap shiftDownUniv x) 
 
         innerBefores x = V.reverse $ V.iterateN innerFocusAt shiftLeftUniv (shiftLeftUniv x)
-        innerAfters x = V.reverse $ V.iterateN (innerLength - innerFocusAt - 1) shiftRightUniv (shiftRightUniv x)
+        innerAfters x = V.iterateN (innerLength - innerFocusAt - 1) shiftRightUniv (shiftRightUniv x)
 
         -- outerBefores =  \x -> reverse $ take outerFocusAt $ iterate1 (fmap shiftUpUniv) x
         -- outerAfters = \x -> take (outerLength - outerFocusAt - 1) $ iterate1 (fmap shiftDownUniv) x 
@@ -220,10 +224,10 @@ type Dim = Int
 makeRingZipper :: Dim -> (Dim -> a) -> RingZipper a
 makeRingZipper n f = RingZipper {
     -- before = fmap f [0..(center - 1)],
-    before = fmap f (V.enumFromN 0 (center - 1)),
+    before = fmap f (V.enumFromTo 0 (center - 1)),
     focus = f center,
     -- after = fmap f [(center + 1)..(n - 1)]
-    after = fmap f (V.enumFromN (center + 1) (center - 1))
+    after = fmap f (V.enumFromTo (center + 1) (n - 1))
 } where
     center = n `div` 2
 

@@ -26,14 +26,14 @@ import qualified BriansBrain
 -- Brians Brain
 -- ============
 
-gridDim = 20
+gridDim = 100 
 startGrid :: Univ BriansBrain.Cell
 startGrid = makeUniv gridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
                                       then
-                                        if (x ^ 17 `mod` 2047 <= 5)
+                                        if (x ^ 17 `mod` 2047 <= 2)
                                             then BriansBrain.On
                                             else BriansBrain.Dying
                                       else
                                         BriansBrain.Off)
 
-main = mainWith $ mkCAGif BriansBrain.briansBrainCA startGrid 100
+main = gifMain $ mkCAGif BriansBrain.briansBrainCA startGrid 100
