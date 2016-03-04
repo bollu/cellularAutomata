@@ -23,7 +23,6 @@ stepCell grid =
     where
         cell' = if numNeighbours == 2 then On
                 else Off
-        cell = extract grid 
         numNeighbours = liveNeighbourCount $ grid
                                 
 
