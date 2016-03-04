@@ -26,7 +26,7 @@ import qualified BriansBrain
 -- Brians Brain
 -- ============
 
-gridDim = 100 
+gridDim = 20 
 startGrid :: Univ BriansBrain.Cell
 startGrid = makeUniv gridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
                                       then
