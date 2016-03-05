@@ -10,7 +10,7 @@ package so it can serve as a reference / library to write Cellular Automata.
 ![game-of-life-gif](https://raw.githubusercontent.com/bollu/cellularAutomata/master/images/game-of-life.gif)
 
 ##### Ruleset
-```
+```haskell
 stepCell :: Grid -> Cell
 stepCell grid = 
     cell'
@@ -29,7 +29,7 @@ stepCell grid =
 
 ##### Ruleset
 
-```
+```haskell
 stepCell :: Grid -> Cell
 stepCell grid = 
     cell'
@@ -46,7 +46,7 @@ stepCell grid =
 
 
 ##### Ruleset
-```
+```haskell
 stepCell :: Grid -> Cell
 stepCell grid = 
     cell'
