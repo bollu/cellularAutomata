@@ -57,6 +57,23 @@ stepCell grid =
         numNeighbours = liveNeighbourCount $ grid
 ```
 
+### 3. 1D cyclic Cellular Automata
+
+![1d-cyclic.gif](https://github.com/bollu/cellularAutomata/blob/master/images/cyclic1d.gif)
+
+##### Ruleset
+
+```haskell
+stepCell :: Simulation -> Cell
+stepCell s =
+    cell'
+    where
+        cell = extract s 
+        cell' = if hasNextNeighbour (getRingZipperNeighbours s)
+           then Cell { value = (Cyclic1D.value cell + 1) `mod` (total cell), total = total cell}
+           else cell
+        hasNextNeighbour neighbours = any (\c -> Cyclic1D.value c == ((Cyclic1D.value cell) + 1) `mod` (total cell)) neighbours
+```
 ### Design
 
 This is an exploration of the Haskell design space to create Cellular Automata.
