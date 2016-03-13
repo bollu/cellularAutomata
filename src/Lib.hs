@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
-module Lib (RingZipper(RingZipper),
+module Lib (RingZipper(RingZipper, before, focus, after),
             lengthRingZipper,
             focusIndexRingZipper,
             mergeRingZipper,
@@ -15,9 +15,10 @@ module Lib (RingZipper(RingZipper),
             shiftUpUniv,
             shiftDownUniv,
             makeRingZipper,
+            getRingZipperNeighbours,
             Univ(Univ),
             makeUniv,
-            getNeighbours,
+            getUnivNeighbours,
             CellularAutomata(CellularAutomata, stepCell, renderUniv),
             mkCAGif) where
 
@@ -53,7 +54,7 @@ instance Functor RingZipper where
         before = fmap f (before `using` parTraversable rseq),
         focus = f focus,
         after = fmap f (after `using` parTraversable rseq)
-    }  
+    }
 
 instance Show a => Show (RingZipper a) where
     show z = "!"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Lib.after z) <> "!"
@@ -70,6 +71,10 @@ focusIndexRingZipper z = V.length (before z)
 
 mergeRingZipper :: RingZipper a -> V.Vector a
 mergeRingZipper z = V.concat [before z, V.singleton (focus z), Lib.after z]
+
+
+getRingZipperNeighbours :: RingZipper a -> (V.Vector a)
+getRingZipperNeighbours z = V.fromList [extract $ shiftLeft z, extract $ shiftRight z]
 
 shiftLeft :: RingZipper a -> RingZipper a
 shiftLeft z = RingZipper {
@@ -241,8 +246,8 @@ makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f o
 
 
 
-getNeighbours :: Univ a -> V.Vector a
-getNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
+getUnivNeighbours :: Univ a -> V.Vector a
+getUnivNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
                       extract . shiftUpUniv . shiftRightUniv $ univ,
                       extract . shiftRightUniv $ univ,
                       extract . shiftDownUniv . shiftRightUniv $ univ,
@@ -251,8 +256,8 @@ getNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
                       extract . shiftLeftUniv $ univ,
                       extract . shiftUpUniv . shiftLeftUniv $ univ]
 
--- getNeighboursMemo :: Memoizable a => Univ a -> [a]
--- getNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
+-- getUnivNeighboursMemo :: Memoizable a => Univ a -> [a]
+-- getUnivNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
 --                       extract . shiftUpUnivMemo . shiftRightUnivMemo $ univ,
 --                       extract . shiftRightUnivMemo $ univ,
 --                       extract . shiftDownUnivMemo . shiftRightUnivMemo $ univ,

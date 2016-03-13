@@ -17,7 +17,7 @@ data Cell = On | Off deriving(Eq)
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getNeighbours grid)
+liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
 
 stepCell :: Grid -> Cell
 stepCell grid = 

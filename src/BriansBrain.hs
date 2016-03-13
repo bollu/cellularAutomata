@@ -19,18 +19,17 @@ deriveMemoizable ''Cell
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getNeighbours grid)
+liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
 
 stepCell :: Grid -> Cell
-stepCell grid = 
+stepCell grid =
     cell'
     where
         cell' = if cell == Off && numNeighbours == 2 then On
                 else if cell == On then Dying
                 else Off
-        cell = extract grid 
+        cell = extract grid
         numNeighbours = liveNeighbourCount $ grid
-                                
 
 renderUniv :: Grid -> Diagram B
 renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
