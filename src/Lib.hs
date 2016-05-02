@@ -236,6 +236,17 @@ makeRingZipper n f = RingZipper {
 } where
     center = n `div` 2
 
+mMakeRingZipper :: Dim -> (Dim -> IO a) -> IO (RingZipper a)
+mMakeRingZipper n f = do
+    let mid = n `div` 2
+    before <- V.generateM (mid - 1) f
+    after <- V.generateM (n - mid + 1) (\x -> f (x + mid))
+    focus <- f mid
+    return $ RingZipper {
+        before=randBefore, 
+        focus=Cyclic1D.Cell {Cyclic1D.total=cyclic1DTypes, Cyclic1D.value=0},
+        after=randAfter
+    }
 
 type OuterDim = Int
 type InnerDim = Int
@@ -244,6 +255,10 @@ type InnerDim = Int
 makeUniv :: Dim -> (OuterDim -> InnerDim -> a) -> Univ a
 makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f outerDim))
 
+
+
+mMakeUniv :: Dim -> (OuterDim -> InnerDim -> IO a) -> IO (Univ a)
+mMakeUniv dim f = do
 
 
 getUnivNeighbours :: Univ a -> V.Vector a

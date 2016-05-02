@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib, GameOfLife, Seeds, BriansBrain, Cyclic1D
+  exposed-modules:     Lib, GameOfLife, Seeds, BriansBrain, Cyclic1D, Cyclic2D
   build-depends:       base >= 4.7 && < 5,
                        diagrams,
                        diagrams-core,

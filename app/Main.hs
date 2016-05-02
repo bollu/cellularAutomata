@@ -67,3 +67,33 @@ cyclic1DStartGrid = do
 main = do
     start <- cyclic1DStartGrid
     gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
+
+-- Cyclic 2D
+-- =========
+
+cycic2dDim = 200
+cyclic2dTypes = 4
+
+type Exp = Int
+cyclic2dGenerator :: Int -> IO Cyclic1D.Cell
+cyclic2dGenerator i = do
+    val <- getStdRandom (randomR (0, cyclic2dTypes - 1))
+    return $ Cyclic2D.Cell {
+        Cyclic2D.total=cyclic2dTypes,
+        Cyclic2D.val=val
+  }
+
+cyclic2dStartGrid :: IO (RingZipper Cyclic2D.Cell)
+cyclic2dStartGrid = do
+    randBefore <- V.generateM (cycic2dDim - 1) Cyclic2Dgenerator
+    randAfter <- V.generateM (cycic2dDim - 1) Cyclic2Dgenerator
+    return $ RingZipper {
+        before=randBefore, 
+        focus=Cyclic2D.Cell {Cyclic2D.total=cyclic2dTypes, Cyclic2D.val=0},
+        after=randAfter
+    }
+
+-- main = do
+--     start <- cyclic1DStartGrid
+--     gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
+
