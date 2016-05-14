@@ -74,6 +74,26 @@ stepCell s =
            else cell
         hasNextNeighbour neighbours = any (\c -> Cyclic1D.value c == ((Cyclic1D.value cell) + 1) `mod` (total cell)) neighbours
 ```
+
+### 4. 2D cyclic Cellular Automata
+
+![2d-cyclic.gif](https://github.com/bollu/cellularAutomata/blob/master/images/cyclic2d.gif)
+
+##### Ruleset
+
+```haskell
+stepCell :: Grid -> Cell
+stepCell s =
+    cell'
+    where
+        cell = extract s 
+        cell' = if hasNextNeighbour (getUnivNeighbours s)
+           then Cell { val = (val cell + 1) `mod` (total cell), total = total cell}
+           else cell
+        hasNextNeighbour neighbours = any (\c -> val c == ((val cell) + 1) `mod` (total cell)) neighbours
+```
+
+
 ### Design
 
 This is an exploration of the Haskell design space to create Cellular Automata.

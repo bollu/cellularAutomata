@@ -11,6 +11,7 @@ import qualified GameOfLife
 import qualified Seeds
 import qualified BriansBrain
 import qualified Cyclic1D 
+import qualified Cyclic2D 
 import System.Random
 
 -- Seeds
@@ -39,13 +40,13 @@ briansStartGrid = makeUniv briansGridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
                                       else
                                         BriansBrain.Off)
 --main = gifMain $ mkCAGif BriansBrain.briansBrainCA startGrid 100
+
 -- Cyclic 1D
 -- =========
 
 cyclic1DDim = 200
 cyclic1DTypes = 4
 
-type Exp = Int
 cyclic1Dgenerator :: Int -> IO Cyclic1D.Cell
 cyclic1Dgenerator i = do
     val <- getStdRandom (randomR (0, cyclic1DTypes - 1))
@@ -64,36 +65,28 @@ cyclic1DStartGrid = do
         after=randAfter
     }
 
-main = do
-    start <- cyclic1DStartGrid
-    gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
+-- main = do
+--    start <- cyclic1DStartGrid
+--    gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
 
 -- Cyclic 2D
 -- =========
 
-cycic2dDim = 200
-cyclic2dTypes = 4
+cyclic2dDim = 50
+cyclic2DTypes = 5
 
-type Exp = Int
-cyclic2dGenerator :: Int -> IO Cyclic1D.Cell
-cyclic2dGenerator i = do
-    val <- getStdRandom (randomR (0, cyclic2dTypes - 1))
+cyclic2DGenerator :: Int -> IO Cyclic2D.Cell
+cyclic2DGenerator i = do
+    val <- getStdRandom (randomR (0, cyclic2DTypes - 1))
     return $ Cyclic2D.Cell {
-        Cyclic2D.total=cyclic2dTypes,
+        Cyclic2D.total=cyclic2DTypes,
         Cyclic2D.val=val
   }
 
-cyclic2dStartGrid :: IO (RingZipper Cyclic2D.Cell)
-cyclic2dStartGrid = do
-    randBefore <- V.generateM (cycic2dDim - 1) Cyclic2Dgenerator
-    randAfter <- V.generateM (cycic2dDim - 1) Cyclic2Dgenerator
-    return $ RingZipper {
-        before=randBefore, 
-        focus=Cyclic2D.Cell {Cyclic2D.total=cyclic2dTypes, Cyclic2D.val=0},
-        after=randAfter
-    }
+cyclic2DStartGrid :: IO (Univ Cyclic2D.Cell)
+cyclic2DStartGrid = do
+    mMakeUniv cyclic2dDim  (\o i -> cyclic2DGenerator (o * i))
 
--- main = do
---     start <- cyclic1DStartGrid
---     gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
-
+main = do
+    start <- cyclic2DStartGrid
+    gifMain $ mkCAGif Cyclic2D.cyclic2DCA start  100

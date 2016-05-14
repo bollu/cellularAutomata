@@ -18,6 +18,7 @@ module Lib (RingZipper(RingZipper, before, focus, after),
             getRingZipperNeighbours,
             Univ(Univ),
             makeUniv,
+            mMakeUniv,
             getUnivNeighbours,
             CellularAutomata(CellularAutomata, stepCell, renderUniv),
             mkCAGif) where
@@ -164,38 +165,27 @@ shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
 
 shiftRightUniv = shiftRightUniv'
 
--- shiftRightUnivMemo :: Memoizable a =>  Univ a -> Univ a
--- shiftRightUnivMemo = memoize shiftRightUniv'
-
 
 shiftLeftUniv' :: Univ a -> Univ a
 shiftLeftUniv' (Univ univ) = Univ(fmap shiftLeft univ)
 
 shiftLeftUniv = shiftLeftUniv'
 
--- shiftLeftUnivMemo :: Memoizable a => Univ a -> Univ a
--- shiftLeftUnivMemo = memoize shiftLeftUniv'
 
 shiftUpUniv' :: Univ a -> Univ a
 shiftUpUniv' (Univ univ) = Univ(shiftLeft univ)
 
 shiftUpUniv = shiftUpUniv'
 
--- shiftUpUnivMemo :: Memoizable a => Univ a -> Univ a
--- shiftUpUnivMemo = memoize shiftUpUniv'
 
 shiftDownUniv' :: Univ a -> Univ a
 shiftDownUniv' (Univ univ) = Univ(shiftRight univ)
 
 shiftDownUniv = shiftDownUniv'
 
--- shiftDownUnivMemo :: Memoizable a => Univ a -> Univ a
--- shiftDownUnivMemo = memoize shiftDownUniv'
-
 instance Comonad Univ where
     extract (Univ univ) = extract $ extract univ
-    -- duplicate :: Univ a -> Univ (Univ a)
-    -- univ :: RingZipper (RingZipper a)
+
     duplicate (u @ (Univ univ)) = Univ $ RingZipper {
         before = outerBefores focusInner,
         focus = focusInner,
@@ -212,12 +202,6 @@ instance Comonad Univ where
 
         innerBefores x = V.reverse $ V.iterateN innerFocusAt shiftLeftUniv (shiftLeftUniv x)
         innerAfters x = V.iterateN (innerLength - innerFocusAt - 1) shiftRightUniv (shiftRightUniv x)
-
-        -- outerBefores =  \x -> reverse $ take outerFocusAt $ iterate1 (fmap shiftUpUniv) x
-        -- outerAfters = \x -> take (outerLength - outerFocusAt - 1) $ iterate1 (fmap shiftDownUniv) x 
-
-        -- innerBefores = \x -> reverse $ take innerFocusAt $ iterate1 shiftLeftUniv x
-        -- innerAfters = \x -> take (innerLength - innerFocusAt - 1) $ iterate1 shiftRightUniv x
 
         outerFocusAt = focusIndexRingZipper univ
         outerLength = lengthRingZipper univ
@@ -243,9 +227,9 @@ mMakeRingZipper n f = do
     after <- V.generateM (n - mid + 1) (\x -> f (x + mid))
     focus <- f mid
     return $ RingZipper {
-        before=randBefore, 
-        focus=Cyclic1D.Cell {Cyclic1D.total=cyclic1DTypes, Cyclic1D.value=0},
-        after=randAfter
+        before=before, 
+        focus=focus,
+        after=after
     }
 
 type OuterDim = Int
@@ -259,6 +243,7 @@ makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f o
 
 mMakeUniv :: Dim -> (OuterDim -> InnerDim -> IO a) -> IO (Univ a)
 mMakeUniv dim f = do
+  Univ <$> mMakeRingZipper dim (\outerDim -> mMakeRingZipper dim (f outerDim))
 
 
 getUnivNeighbours :: Univ a -> V.Vector a
