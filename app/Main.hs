@@ -4,7 +4,7 @@
 
 module Main where
 
-import Lib
+import Cellular
 import qualified Data.Vector as V
 import Diagrams.Backend.Cairo.CmdLine
 import qualified GameOfLife

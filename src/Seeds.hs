@@ -1,6 +1,6 @@
 module Seeds where
 
-import Lib
+import Cellular
 import Control.Comonad
 import Diagrams.Prelude
 import Diagrams.Backend.Cairo.CmdLine
@@ -38,7 +38,7 @@ cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
 cellToDiagram Off = (square 1 # fc (sRGB24read "#455A64"))
 
 
-seedsCA = Lib.CellularAutomata {
-    Lib.stepCell = Seeds.stepCell,
-    Lib.renderUniv = Seeds.renderUniv
+seedsCA = Cellular.CellularAutomata {
+    Cellular.stepCell = Seeds.stepCell,
+    Cellular.renderUniv = Seeds.renderUniv
 }

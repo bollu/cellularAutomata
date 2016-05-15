@@ -2,7 +2,7 @@
 
 module BriansBrain where
 
-import Lib
+import Cellular
 import Control.Comonad
 import Diagrams.Prelude
 import Diagrams.Backend.Cairo.CmdLine
@@ -41,7 +41,7 @@ cellToDiagram Dying = (square 1 # fc (sRGB24read "#455A64"))
 cellToDiagram Off = (square 1 # fc (sRGB24read "#202020"))
 
 
-briansBrainCA = Lib.CellularAutomata {
-    Lib.stepCell = BriansBrain.stepCell,
-    Lib.renderUniv = BriansBrain.renderUniv
+briansBrainCA = Cellular.CellularAutomata {
+    Cellular.stepCell = BriansBrain.stepCell,
+    Cellular.renderUniv = BriansBrain.renderUniv
 }

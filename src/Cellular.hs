@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
-module Lib (RingZipper(RingZipper, before, focus, after),
+module Cellular (RingZipper(RingZipper, before, focus, after),
             lengthRingZipper,
             focusIndexRingZipper,
             mergeRingZipper,
@@ -58,20 +58,20 @@ instance Functor RingZipper where
     }
 
 instance Show a => Show (RingZipper a) where
-    show z = "!"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Lib.after z) <> "!"
+    show z = "!"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Cellular.after z) <> "!"
                 where
                     --showElements l = folmconcat (L.intersperse "  " (fmap show l))
                     showElements l = foldl' (\str val -> str <> " " <> show val ) ""  l
                     showCenterElement x =  "  (" <> show x <> ")  "
 
 lengthRingZipper :: RingZipper a -> Int
-lengthRingZipper z = V.length (before z) + 1 + V.length (Lib.after z)
+lengthRingZipper z = V.length (before z) + 1 + V.length (Cellular.after z)
 
 focusIndexRingZipper :: RingZipper a -> Int
 focusIndexRingZipper z = V.length (before z)
 
 mergeRingZipper :: RingZipper a -> V.Vector a
-mergeRingZipper z = V.concat [before z, V.singleton (focus z), Lib.after z]
+mergeRingZipper z = V.concat [before z, V.singleton (focus z), Cellular.after z]
 
 
 getRingZipperNeighbours :: RingZipper a -> (V.Vector a)
@@ -95,7 +95,7 @@ shiftLeft z = RingZipper {
         after' = 
             if V.null (before z)
                 then V.empty
-                else V.cons (focus z) (Lib.after z)
+                else V.cons (focus z) (Cellular.after z)
 
 
 shiftRight :: RingZipper a -> RingZipper a
@@ -110,13 +110,13 @@ shiftRight z = RingZipper {
         
         focus' = merged V.! focusAt'
         before' =   
-            if V.null (Lib.after z)
+            if V.null (Cellular.after z)
                 then empty
                 else V.snoc (before z) (focus z)
         after' = 
-            if V.null (Lib.after z)
+            if V.null (Cellular.after z)
                 then V.tail merged
-                else V.tail (Lib.after z)
+                else V.tail (Cellular.after z)
 
 
 

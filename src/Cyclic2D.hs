@@ -3,7 +3,7 @@
 
 module Cyclic2D where
 
-import Lib
+import Cellular
 import Control.Comonad
 import Diagrams.Prelude
 import Diagrams.Backend.Cairo.CmdLine
@@ -37,7 +37,7 @@ cellToDiagram Cell{val=2, ..} = rect 1 1 # fc (sRGB24read "#e67e22")
 cellToDiagram Cell{val=3, ..} = rect 1 1 # fc (sRGB24read "#9b59b6")
 cellToDiagram Cell{val=4, ..} = rect 1 1 # fc (sRGB24read "#2c3e50")
 cellToDiagram Cell{..} = square 1 # fc (sRGB 0.2 (1.0 - 0.2) 0.0)
-cyclic2DCA = Lib.CellularAutomata {
-    Lib.stepCell = Cyclic2D.stepCell,
-    Lib.renderUniv = Cyclic2D.renderUniv
+cyclic2DCA = Cellular.CellularAutomata {
+    Cellular.stepCell = Cyclic2D.stepCell,
+    Cellular.renderUniv = Cyclic2D.renderUniv
 }
