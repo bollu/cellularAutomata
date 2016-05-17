@@ -72,8 +72,8 @@ cyclic1DStartGrid = do
 -- Cyclic 2D
 -- =========
 
-cyclic2dDim = 50
-cyclic2DTypes = 5
+cyclic2dDim = 30
+cyclic2DTypes = 15
 
 cyclic2DGenerator :: Int -> IO Cyclic2D.Cell
 cyclic2DGenerator i = do
@@ -89,4 +89,4 @@ cyclic2DStartGrid = do
 
 main = do
     start <- cyclic2DStartGrid
-    gifMain $ mkCAGif Cyclic2D.cyclic2DCA start  100
+    gifMain $ mkCAGif Cyclic2D.cyclic2DCA start 200
