@@ -41,7 +41,7 @@ cellToDiagram Dying = (square 1 # fc (sRGB24read "#455A64"))
 cellToDiagram Off = (square 1 # fc (sRGB24read "#202020"))
 
 
-briansBrainCA = Cellular.CellularAutomata {
-    Cellular.stepCell = BriansBrain.stepCell,
-    Cellular.renderUniv = BriansBrain.renderUniv
-}
+--briansBrainCA = Cellular.CellularAutomata {
+--    Cellular.stepCell = BriansBrain.stepCell,
+--    Cellular.renderUniv = BriansBrain.renderUniv
+--}

@@ -6,7 +6,7 @@ module Main where
 
 import Cellular
 import qualified Data.Vector as V
-import Diagrams.Backend.Cairo.CmdLine
+import Diagrams.Backend.Rasterific.CmdLine
 import qualified GameOfLife
 import qualified Seeds
 import qualified BriansBrain
@@ -39,8 +39,6 @@ briansStartGrid = makeUniv briansGridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
                                             else BriansBrain.Dying
                                       else
                                         BriansBrain.Off)
---main = gifMain $ mkCAGif BriansBrain.briansBrainCA startGrid 100
-
 -- Cyclic 1D
 -- =========
 
@@ -65,10 +63,6 @@ cyclic1DStartGrid = do
         after=randAfter
     }
 
--- main = do
---    start <- cyclic1DStartGrid
---    gifMain $ mkCAGif Cyclic1D.cyclic1DCA start  100
-
 -- Cyclic 2D
 -- =========
 
@@ -83,10 +77,14 @@ cyclic2DGenerator i = do
         Cyclic2D.val=val
   }
 
-cyclic2DStartGrid :: IO (Univ Cyclic2D.Cell)
+cyclic2DStartGrid :: IO (Cyclic2D.Cyclic2D Cyclic2D.Cell)
 cyclic2DStartGrid = do
-    mMakeUniv cyclic2dDim  (\o i -> cyclic2DGenerator (o * i))
+    Cyclic2D.Cyclic2D <$> mMakeUniv cyclic2dDim  (\o i -> cyclic2DGenerator (o * i))
 
-main = do
+-- main = print "hello, world"
+mainCyclic2D = do
     start <- cyclic2DStartGrid
-    gifMain $ mkCAGif Cyclic2D.cyclic2DCA start 200
+    gifMain $ mkCAGif start 100
+
+
+main = mainCyclic2D

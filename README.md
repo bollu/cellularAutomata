@@ -101,8 +101,6 @@ This is an exploration of the Haskell design space to create Cellular Automata.
 I finally settled on using [`Comonads`](http://blog.sigfpe.com/2006/12/evaluating-cellular-automata-is.html) to represent the grid space of the cellular automata.
 The difference between this implementation and many others in the wild is that this one
 has a *finite* grid, which makes writing the instances for `Zipper` and `Comonad` harder. 
-I'll be putting up a blog post sometime soon. Until then, enjoy the pretty pictures!
-
 
 This will be refactored into a library that allows one to create cellular automata by simply
 specifying the ruleset and the way to draw a *single* cell. The library will extrapolate the data
@@ -124,6 +122,77 @@ As a college student, I write code for passion projects like this on my free tim
 If you want to support me to see more stuff like this, please
 
 [![Support via Gratipay](https://cdn.rawgit.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.svg)](https://gratipay.com/bollu/)
+
+
+### Theory
+
+#### Motivating Comonads
+
+As stated before, this simulation uses the `Comonad` typeclass to model cellular automata. There are multiple ways of looking at this algebra,
+and one way to think of them is a structure that can automatically convert "global-to-local" transforms into "global-to-global" transforms.
+
+
+For example, in a cellular automata, the "global-to-local" transformation is updating the state of _one_ Cell by reading the cell's neighbours.
+The neighbour state is the global state, which is used to update the local state of the cell. This can be thought of as the type
+```haskell
+Grid -> Cell
+```
+
+
+where `Grid` is the grid in which the cellular automata is running, and `Cell` is the new state of the cell. However, the question that immediately arises
+is - which cell? the answer is that, the `Grid` not only encodes the state of the cellular automata, but also a __focused cell__ which is updated.
+
+
+The `Grid` is not just a grid, it is a grid with a cell that it is targeted on. However, this seems ridiculous, since we have simply added
+extra complexity (that of focusing on a particular cell) with zero gains in benefit. 
+
+
+
+The nice part of a `Comonad` is that if we have a structure that knows how to do a "focused update", the `Comonad` enables us to extend this
+to the entire structure.
+Written in types, it is along the lines of
+```haskell
+Grid -> (Grid -> Cell) -> Grid
+```
+
+If we think of grid as a container of cells (or as a functor `w`), this gives us the new type
+```haskell
+Grid -> (Grid -> Cell) -> Grid
+-- replace Grid with w Cell
+w Cell -> (w Cell -> Cell) -> w Cell
+-- replace Cell with type variable a
+w a -> (w a -> a) -> w a
+-- generalize type even further, by allowing the
+-- output type to differ
+-- (this is shown to be possible with an implementation later on)
+w a -> (w a -> b) -> w b
+```
+Note that this rewrite exploited the fact that a `Grid` is simply a functor (collection) of `Cell`s, and then used this to 
+rewrite the type signature.
+
+
+The type signature
+```haskell
+w a -> (w a -> b) -> w b
+```
+can be sharply contrasted with the monadic `>>= (bind)` as 
+```haskell
+>>= :: m a -> (a -> m b) -> m b
+```
+
+Indeed, these structures are dual, which is why there are called as `Comonad`, which is also why I
+picked `w` as the symbol for `Comonad` (which is an upside-down `m` for `Monad`). It is usually called as "cobind", and is
+written as
+```haskell
+=>> :: w a -> (w a -> b) -> w b
+```
+with the interpretation that it takes a global structure `w a` which is focused on some `a` in the `w a`, and then
+takes a transform that updates the focused `a` in the `w a ` to a `b`. Given these two pieces of information, the
+Comonad automatically updates every single `a`, to produce an updated `w b`.
+
+
+#### The `Store` comonad
+
 
 ### License - MIT
 ```

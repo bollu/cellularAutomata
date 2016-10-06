@@ -1,7 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Cellular (RingZipper(RingZipper, before, focus, after),
             lengthRingZipper,
@@ -20,14 +23,13 @@ module Cellular (RingZipper(RingZipper, before, focus, after),
             makeUniv,
             mMakeUniv,
             getUnivNeighbours,
-            CellularAutomata(CellularAutomata, stepCell, renderUniv),
+            CA(stepCell, renderUniv),
             mkCAGif) where
 
 
 import GHC.Generics (Generic)
 import Control.Comonad
 import Diagrams.Prelude
-import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
@@ -36,13 +38,11 @@ import Data.Function.Memoize
 import Control.Parallel.Strategies
 import Data.Vector as V
 import Data.Vector.Strategies
+import Diagrams.Core.Types
+import Data.Typeable.Internal
 
 numParChunks :: Int
 numParChunks = 10
-
--- or:
--- import Diagrams.Backend.xxx.CmdLine
--- where xxx is the backend you would like to use.
 
 data RingZipper a = RingZipper {
     before :: Vector a,
@@ -275,14 +275,20 @@ editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper 
 
 -- u = universe
 -- a = smaller piece
-data CellularAutomata u a = CellularAutomata {
-    renderUniv :: u a -> Diagram B,
-    stepCell :: u a -> a
-}
+-- data CellularAutomata b u a =  CellularAutomata {
+--    renderUniv :: u a -> QDiagram b V2 (N b) Any,
+--    stepCell :: u a -> a
+--}
+--
+
+class CA u a where
+  renderUniv :: ((Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b) => u a -> QDiagram b V2 (N b) Any
+  stepCell :: u a -> a
 
 type Steps = Int
-mkCAGif :: Comonad u => CellularAutomata u a -> u a -> Steps -> [(QDiagram B V2 Double Any, Int)]
-mkCAGif ca seed stepsOut = V.toList $ V.zip renderedSteps (V.replicate stepsOut  (10 :: Int)) where
-    renderedSteps = fmap (renderUniv ca) (us `using` parTraversable rseq)
-    stepUniv u = u =>> stepCell ca
-    us = V.iterateN stepsOut stepUniv seed
+
+mkCAGif :: (Comonad u, (CA u a), (Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b) => u a -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
+mkCAGif ca stepsOut = V.toList $ V.zip renderedSteps (V.replicate stepsOut  (5 :: Int)) where
+    renderedSteps = fmap renderUniv (us `using` parTraversable rseq)
+    stepUniv u = u =>> stepCell
+    us = V.iterateN stepsOut stepUniv ca

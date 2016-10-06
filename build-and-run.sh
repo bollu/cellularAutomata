@@ -2,4 +2,4 @@
 
 stack build && \
 echo "running ----" && \
-stack exec haskell-diagrams-cellular-automata-exe  --   -h 512 -w 512 -o images/simple.gif
+stack exec haskell-diagrams-cellular-automata-exe  --   -h 256 -w 256 -o images/simple.gif

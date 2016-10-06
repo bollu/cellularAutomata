@@ -44,6 +44,7 @@ executable haskell-diagrams-cellular-automata-exe
                        diagrams-svg,
                        diagrams-contrib,
                        diagrams-cairo,
+                       diagrams-rasterific,
                        random,
                        comonad,
                        active,

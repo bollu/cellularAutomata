@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Cyclic1D(Cell(Cell, value, total), Simulation, cyclic1DCA) where
+module Cyclic1D(Cell(Cell, value, total), Simulation) where
 import Cellular
 import Control.Comonad
 import Diagrams.Prelude
@@ -35,7 +35,7 @@ cellToDiagram Cell{value=4, ..} = (rect 1 4 # fc (sRGB24read "#2c3e50"))
 cellToDiagram Cell{..} = square 1 # fc (sRGB f (1.0 - f) 0.0) where
                             f = (fromIntegral value / fromIntegral total)
 
-cyclic1DCA = Cellular.CellularAutomata {
-    Cellular.stepCell = Cyclic1D.stepCell,
-    Cellular.renderUniv = Cyclic1D.renderUniv
-}
+--cyclic1DCA = Cellular.CellularAutomata {
+--    Cellular.stepCell = Cyclic1D.stepCell,
+--    Cellular.renderUniv = Cyclic1D.renderUniv
+--}

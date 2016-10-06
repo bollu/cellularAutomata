@@ -43,7 +43,8 @@ cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
 cellToDiagram Off = (square 1 # fc (sRGB24read "#455A64"))
 
 
-gameOfLifeCA = Cellular.CellularAutomata {
-    Cellular.stepCell = GameOfLife.stepCell,
-    Cellular.renderUniv = GameOfLife.renderUniv
-}
+
+-- gameOfLifeCA = Cellular.CellularAutomata {
+--   Cellular.stepCell = GameOfLife.stepCell,
+--    Cellular.renderUniv = GameOfLife.renderUniv
+--}
