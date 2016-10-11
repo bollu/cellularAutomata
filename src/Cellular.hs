@@ -23,7 +23,8 @@ module Cellular (RingZipper(RingZipper, before, focus, after),
             makeUniv,
             mMakeUniv,
             getUnivNeighbours,
-            CA(stepCell, renderUniv),
+            CADiagramConstraints,
+            CA(stepCell, renderCA),
             mkCAGif) where
 
 
@@ -58,9 +59,8 @@ instance Functor RingZipper where
     }
 
 instance Show a => Show (RingZipper a) where
-    show z = "!"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Cellular.after z) <> "!"
+    show z = "|"<> showElements (before z) <> showCenterElement (focus z) <> showElements (Cellular.after z) <> "|"
                 where
-                    --showElements l = folmconcat (L.intersperse "  " (fmap show l))
                     showElements l = foldl' (\str val -> str <> " " <> show val ) ""  l
                     showCenterElement x =  "  (" <> show x <> ")  "
 
@@ -145,10 +145,7 @@ editRingZipper RingZipper{..} f = RingZipper {
     after = after
 }        
 
-
 newtype Univ a = Univ (RingZipper (RingZipper a)) deriving(Eq)
-
--- deriveMemoizable ''Univ
 
 instance Show a => Show (Univ a) where
     show (Univ RingZipper{..}) = " " <> showLines before <> showCenterLine focus <> showLines after where
@@ -159,29 +156,18 @@ instance Functor Univ where
     fmap f (Univ univ) = Univ((fmap . fmap) f univ)
 
 
--- lyxia help: Use Univ(Univ a) for performance
-shiftRightUniv' :: Univ a -> Univ a
-shiftRightUniv' (Univ univ) = Univ(fmap shiftRight univ)
-
-shiftRightUniv = shiftRightUniv'
+shiftRightUniv :: Univ a -> Univ a
+shiftRightUniv (Univ univ) = Univ(fmap shiftRight univ)
 
 
-shiftLeftUniv' :: Univ a -> Univ a
-shiftLeftUniv' (Univ univ) = Univ(fmap shiftLeft univ)
+shiftLeftUniv :: Univ a -> Univ a
+shiftLeftUniv (Univ univ) = Univ(fmap shiftLeft univ)
 
-shiftLeftUniv = shiftLeftUniv'
+shiftUpUniv :: Univ a -> Univ a
+shiftUpUniv (Univ univ) = Univ(shiftLeft univ)
 
-
-shiftUpUniv' :: Univ a -> Univ a
-shiftUpUniv' (Univ univ) = Univ(shiftLeft univ)
-
-shiftUpUniv = shiftUpUniv'
-
-
-shiftDownUniv' :: Univ a -> Univ a
-shiftDownUniv' (Univ univ) = Univ(shiftRight univ)
-
-shiftDownUniv = shiftDownUniv'
+shiftDownUniv :: Univ a -> Univ a
+shiftDownUniv (Univ univ) = Univ(shiftRight univ)
 
 instance Comonad Univ where
     extract (Univ univ) = extract $ extract univ
@@ -208,19 +194,11 @@ instance Comonad Univ where
 
         innerFocusAt = focusIndexRingZipper $ extract univ 
         innerLength = lengthRingZipper $ extract univ
-type Dim = Int
--- Dim \in [0, n - 1]
-makeRingZipper :: Dim -> (Dim -> a) -> RingZipper a
-makeRingZipper n f = RingZipper {
-    -- before = fmap f [0..(center - 1)],
-    before = fmap f (V.enumFromTo 0 (center - 1)),
-    focus = f center,
-    -- after = fmap f [(center + 1)..(n - 1)]
-    after = fmap f (V.enumFromTo (center + 1) (n - 1))
-} where
-    center = n `div` 2
 
-mMakeRingZipper :: Dim -> (Dim -> IO a) -> IO (RingZipper a)
+type Dim = Int
+
+
+mMakeRingZipper :: Monad m => Dim -> (Dim -> m a) -> m (RingZipper a)
 mMakeRingZipper n f = do
     let mid = n `div` 2
     before <- V.generateM (mid - 1) f
@@ -235,15 +213,17 @@ mMakeRingZipper n f = do
 type OuterDim = Int
 type InnerDim = Int
 
-
-makeUniv :: Dim -> (OuterDim -> InnerDim -> a) -> Univ a
-makeUniv dim f = Univ $ makeRingZipper dim (\outerDim -> makeRingZipper dim (f outerDim))
-
+makeRingZipper :: Dim -> (Dim -> a) -> RingZipper a
+makeRingZipper n f = runIdentity $  mMakeRingZipper n (return . f)
 
 
-mMakeUniv :: Dim -> (OuterDim -> InnerDim -> IO a) -> IO (Univ a)
+mMakeUniv :: Monad m => Dim -> (OuterDim -> InnerDim -> m a) -> m (Univ a)
 mMakeUniv dim f = do
   Univ <$> mMakeRingZipper dim (\outerDim -> mMakeRingZipper dim (f outerDim))
+
+
+makeUniv :: Dim -> (OuterDim -> InnerDim -> a) -> Univ a
+makeUniv dim f = runIdentity $ mMakeUniv dim (\o i -> return $ f o i)
 
 
 getUnivNeighbours :: Univ a -> V.Vector a
@@ -256,39 +236,22 @@ getUnivNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
                       extract . shiftLeftUniv $ univ,
                       extract . shiftUpUniv . shiftLeftUniv $ univ]
 
--- getUnivNeighboursMemo :: Memoizable a => Univ a -> [a]
--- getUnivNeighboursMemo univ = [extract . shiftUpUnivMemo $ univ,
---                       extract . shiftUpUnivMemo . shiftRightUnivMemo $ univ,
---                       extract . shiftRightUnivMemo $ univ,
---                       extract . shiftDownUnivMemo . shiftRightUnivMemo $ univ,
---                       extract . shiftDownUnivMemo $ univ,
---                       extract . shiftDownUnivMemo . shiftLeftUnivMemo $ univ,
---                       extract . shiftLeftUnivMemo $ univ,
---                      extract . shiftUpUnivMemo . shiftLeftUniv $ univ]
-
 editUniverse :: Univ a -> (a -> a) -> Univ a 
 editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper zip f)
 
---class Comonad u => CellularAutomata (u a) where
---    render :: u -> Diagram B
---    step :: u -> a
 
--- u = universe
--- a = smaller piece
--- data CellularAutomata b u a =  CellularAutomata {
---    renderUniv :: u a -> QDiagram b V2 (N b) Any,
---    stepCell :: u a -> a
---}
---
+type CADiagramConstraints b = (Data.Typeable.Internal.Typeable (N b), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b)
 
 class CA u a where
-  renderUniv :: ((Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b) => u a -> QDiagram b V2 (N b) Any
+  renderCA :: CADiagramConstraints b  => u a -> QDiagram b V2 (N b) Any
   stepCell :: u a -> a
+
+
 
 type Steps = Int
 
-mkCAGif :: (Comonad u, (CA u a), (Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b) => u a -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
+mkCAGif :: (Comonad u, CA u a, CADiagramConstraints b) => u a -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
 mkCAGif ca stepsOut = V.toList $ V.zip renderedSteps (V.replicate stepsOut  (5 :: Int)) where
-    renderedSteps = fmap renderUniv (us `using` parTraversable rseq)
+    renderedSteps = fmap renderCA (us `using` parTraversable rseq)
     stepUniv u = u =>> stepCell
     us = V.iterateN stepsOut stepUniv ca

@@ -9,13 +9,11 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
-import Data.Function.Memoize
 import qualified Data.Vector as V
 
 
 data Cell = On | Off | Dying deriving(Eq)
 
-deriveMemoizable ''Cell
 type Grid = Univ Cell
 
 liveNeighbourCount :: Grid -> Int

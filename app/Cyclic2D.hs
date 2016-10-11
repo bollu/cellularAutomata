@@ -11,12 +11,16 @@ import Diagrams.Prelude
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
-import Data.Function.Memoize
 import qualified Data.Vector as V
 import Data.Typeable.Internal
 
 data Cell = Cell { val :: Int, total :: Int }
-type Grid = Univ Cell
+newtype Cyclic2D a = Cyclic2D (Univ a) deriving(Functor, Comonad)
+
+instance CA Cyclic2D Cell where
+  stepCell  = Cyclic2D.stepCell
+  renderCA = Cyclic2D.renderCA
+
 
 stepCell :: Cyclic2D Cell -> Cell
 stepCell (Cyclic2D s) =
@@ -28,10 +32,10 @@ stepCell (Cyclic2D s) =
            else cell
         hasNextNeighbour neighbours = any (\c -> val c == ((val cell) + 1) `mod` (total cell)) neighbours
 
-renderUniv :: ((Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b) => Cyclic2D Cell -> QDiagram b V2 (N b) Any
-renderUniv (Cyclic2D (Univ(univ))) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
+renderCA :: CADiagramConstraints b => Cyclic2D Cell -> QDiagram b V2 (N b) Any
+renderCA (Cyclic2D (Univ univ)) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
 
-cellToDiagram :: ((Data.Typeable.Internal.Typeable (N b)), RealFloat (N b), TypeableFloat (N b), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b)  => Cell -> QDiagram b V2 (N b) Any
+cellToDiagram :: CADiagramConstraints b => Cell -> QDiagram b V2 (N b) Any
 cellToDiagram Cell{val=0, ..}  = rect 1 1# fc (sRGB24read "#010101")
 cellToDiagram Cell{val=1, ..}  = rect 1 1# fc (sRGB24read "#111111")
 cellToDiagram Cell{val=2, ..} = rect 1 1 # fc (sRGB24read "#222222")
@@ -51,8 +55,3 @@ cellToDiagram Cell{val=15, ..} = rect 1 1 # fc (sRGB24read "#EFEFEF")
 cellToDiagram Cell{..} = square 1 # fc (sRGB 0.2 (1.0 - 0.2) 0.0)
 
 
-newtype Cyclic2D a = Cyclic2D (Univ a) deriving(Functor, Comonad)
-
-instance CA (Cyclic2D) (Cell) where
-  stepCell  = Cyclic2D.stepCell
-  renderUniv = Cyclic2D.renderUniv
