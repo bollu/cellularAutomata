@@ -1,9 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
--- allow concrete types in constraints of typeclases
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
-
+{-# LANGUAGE InstanceSigs #-}
 module Cyclic2D where
 import Cellular
 import Control.Comonad
@@ -13,16 +11,33 @@ import Control.Monad
 import Data.Active
 import qualified Data.Vector as V
 import Data.Typeable.Internal
+import Data.MonoTraversable
 
 data Cell = Cell { val :: Int, total :: Int }
-newtype Cyclic2D a = Cyclic2D (Univ a) deriving(Functor, Comonad)
+newtype Cyclic2D = Cyclic2D (Univ Cell)
 
-instance CA Cyclic2D Cell where
+-- add auto deriving code so that if the inner structure inside newtype
+-- has comonad, then the outer structure can learn to derive monocomonad
+
+type instance Element (Cyclic2D) = Cell
+
+instance CA Cyclic2D where
   stepCell  = Cyclic2D.stepCell
   renderCA = Cyclic2D.renderCA
 
+instance MonoFunctor Cyclic2D where
+  omap :: (Cell -> Cell) -> Cyclic2D -> Cyclic2D
+  omap f (Cyclic2D u) = Cyclic2D (fmap f u)
+  
 
-stepCell :: Cyclic2D Cell -> Cell
+instance MonoComonad Cyclic2D where
+  oextract :: Cyclic2D -> Cell
+  oextract (Cyclic2D u) = extract u
+
+  oextend :: (Cyclic2D -> Cell) -> Cyclic2D -> Cyclic2D
+  oextend f (Cyclic2D u) = Cyclic2D $ u =>> (f . Cyclic2D)
+
+stepCell :: Cyclic2D -> Cell
 stepCell (Cyclic2D s) =
     cell'
     where
@@ -32,10 +47,10 @@ stepCell (Cyclic2D s) =
            else cell
         hasNextNeighbour neighbours = any (\c -> val c == ((val cell) + 1) `mod` (total cell)) neighbours
 
-renderCA :: CADiagramConstraints b => Cyclic2D Cell -> QDiagram b V2 (N b) Any
+renderCA :: CADiagramBackend b => Cyclic2D -> QDiagram b V2 (N b) Any
 renderCA (Cyclic2D (Univ univ)) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
 
-cellToDiagram :: CADiagramConstraints b => Cell -> QDiagram b V2 (N b) Any
+cellToDiagram :: CADiagramBackend b => Cell -> QDiagram b V2 (N b) Any
 cellToDiagram Cell{val=0, ..}  = rect 1 1# fc (sRGB24read "#010101")
 cellToDiagram Cell{val=1, ..}  = rect 1 1# fc (sRGB24read "#111111")
 cellToDiagram Cell{val=2, ..} = rect 1 1 # fc (sRGB24read "#222222")

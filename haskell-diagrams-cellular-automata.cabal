@@ -28,7 +28,8 @@ library
                        vector,
                        memoize,
                        vector-strategies,
-                       parallel
+                       parallel,
+                       mono-traversable
 
   default-language:    Haskell2010
 
@@ -50,7 +51,9 @@ executable haskell-diagrams-cellular-automata-exe
                        active,
                        vector,
                        colour,
-                       haskell-diagrams-cellular-automata
+                       haskell-diagrams-cellular-automata,
+                       mono-traversable
+
   default-language:    Haskell2010
 
 test-suite haskell-diagrams-cellular-automata-test

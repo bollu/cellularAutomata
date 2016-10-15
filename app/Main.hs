@@ -42,27 +42,6 @@ briansStartGrid = makeUniv briansGridDim (\y x -> if (y ^ 13 `mod` 1023 <= 5)
 -- Cyclic 1D
 -- =========
 
-cyclic1DDim = 200
-cyclic1DTypes = 4
-
-cyclic1Dgenerator :: Int -> IO Cyclic1D.Cell
-cyclic1Dgenerator i = do
-    val <- getStdRandom (randomR (0, cyclic1DTypes - 1))
-    return $ Cyclic1D.Cell {
-        Cyclic1D.total=cyclic1DTypes,
-        Cyclic1D.value=val
-  }
-
-cyclic1DStartGrid :: IO (RingZipper Cyclic1D.Cell)
-cyclic1DStartGrid = do
-    randBefore <- V.generateM (cyclic1DDim - 1) cyclic1Dgenerator
-    randAfter <- V.generateM (cyclic1DDim - 1) cyclic1Dgenerator
-    return $ RingZipper {
-        before=randBefore, 
-        focus=Cyclic1D.Cell {Cyclic1D.total=cyclic1DTypes, Cyclic1D.value=0},
-        after=randAfter
-    }
-
 -- Cyclic 2D
 -- =========
 
@@ -77,9 +56,9 @@ cyclic2DGenerator i = do
         Cyclic2D.val=val
   }
 
-cyclic2DStartGrid :: IO (Cyclic2D.Cyclic2D Cyclic2D.Cell)
+cyclic2DStartGrid :: IO (Cyclic2D.Cyclic2D)
 cyclic2DStartGrid = do
-    Cyclic2D.Cyclic2D <$> mMakeUniv cyclic2dDim  (\o i -> cyclic2DGenerator (o * i))
+    Cyclic2D.Cyclic2D <$> makeUnivM cyclic2dDim  (\o i -> cyclic2DGenerator (37 * o  + 1337 * i))
 
 -- main = print "hello, world"
 mainCyclic2D = do

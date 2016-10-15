@@ -5,25 +5,18 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Cellular (RingZipper(RingZipper, before, focus, after),
-            lengthRingZipper,
-            focusIndexRingZipper,
-            mergeRingZipper,
-            shiftLeft,
-            shiftRight,
-            editRingZipper,
-            shiftRightUniv,
-            shiftLeftUniv,
-            shiftUpUniv,
-            shiftDownUniv,
+module Cellular (RingZipper(RingZipper),
             makeRingZipper,
+            makeRingZipperM,
             getRingZipperNeighbours,
+            mergeRingZipper,
             Univ(Univ),
             makeUniv,
-            mMakeUniv,
+            makeUnivM,
             getUnivNeighbours,
-            CADiagramConstraints,
+            CADiagramBackend,
             CA(stepCell, renderCA),
             mkCAGif) where
 
@@ -41,9 +34,7 @@ import Data.Vector as V
 import Data.Vector.Strategies
 import Diagrams.Core.Types
 import Data.Typeable.Internal
-
-numParChunks :: Int
-numParChunks = 10
+import Data.MonoTraversable
 
 data RingZipper a = RingZipper {
     before :: Vector a,
@@ -124,10 +115,8 @@ iterate1 :: (a -> a) -> a -> [a]
 iterate1 f x = iterate f (f x)
 
 instance Comonad RingZipper where
-    -- extract :: RingZipper a -> a
     extract RingZipper {..} = focus
 
-    -- duplicate :: RingZipper a -> RingZipper(RingZipper a)
     duplicate z = RingZipper {
         before = before,
         focus = z,
@@ -138,12 +127,14 @@ instance Comonad RingZipper where
         after = V.iterateN (lengthRingZipper z - focusAt - 1) shiftRight (shiftRight z)
 
 
+{-
 editRingZipper :: RingZipper a -> (a -> a) -> RingZipper a
-editRingZipper RingZipper{..} f = RingZipper {
+ editRingZipper RingZipper{..} f = RingZipper {
     before = before,
     focus = f focus,
     after = after
-}        
+}
+-}
 
 newtype Univ a = Univ (RingZipper (RingZipper a)) deriving(Eq)
 
@@ -198,8 +189,8 @@ instance Comonad Univ where
 type Dim = Int
 
 
-mMakeRingZipper :: Monad m => Dim -> (Dim -> m a) -> m (RingZipper a)
-mMakeRingZipper n f = do
+makeRingZipperM :: Monad m => Dim -> (Dim -> m a) -> m (RingZipper a)
+makeRingZipperM n f = do
     let mid = n `div` 2
     before <- V.generateM (mid - 1) f
     after <- V.generateM (n - mid + 1) (\x -> f (x + mid))
@@ -214,20 +205,18 @@ type OuterDim = Int
 type InnerDim = Int
 
 makeRingZipper :: Dim -> (Dim -> a) -> RingZipper a
-makeRingZipper n f = runIdentity $  mMakeRingZipper n (return . f)
+makeRingZipper n f = runIdentity $  makeRingZipperM n (return . f)
 
-
-mMakeUniv :: Monad m => Dim -> (OuterDim -> InnerDim -> m a) -> m (Univ a)
-mMakeUniv dim f = do
-  Univ <$> mMakeRingZipper dim (\outerDim -> mMakeRingZipper dim (f outerDim))
-
+makeUnivM :: Monad m => Dim -> (OuterDim -> InnerDim -> m a) -> m (Univ a)
+makeUnivM dim f = do
+  Univ <$> makeRingZipperM dim (\outerDim -> makeRingZipperM dim (f outerDim))
 
 makeUniv :: Dim -> (OuterDim -> InnerDim -> a) -> Univ a
-makeUniv dim f = runIdentity $ mMakeUniv dim (\o i -> return $ f o i)
-
+makeUniv dim f = runIdentity $ makeUnivM dim (\o i -> return $ f o i)
 
 getUnivNeighbours :: Univ a -> V.Vector a
-getUnivNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
+getUnivNeighbours univ = V.fromList $
+                     [extract . shiftUpUniv $ univ,
                       extract . shiftUpUniv . shiftRightUniv $ univ,
                       extract . shiftRightUniv $ univ,
                       extract . shiftDownUniv . shiftRightUniv $ univ,
@@ -236,22 +225,20 @@ getUnivNeighbours univ = V.fromList $ [extract . shiftUpUniv $ univ,
                       extract . shiftLeftUniv $ univ,
                       extract . shiftUpUniv . shiftLeftUniv $ univ]
 
-editUniverse :: Univ a -> (a -> a) -> Univ a 
-editUniverse (Univ univ) f = Univ $ editRingZipper univ (\zip -> editRingZipper zip f)
+-- TODO: use GHC generics to auto derive mono instances
 
 
-type CADiagramConstraints b = (Data.Typeable.Internal.Typeable (N b), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b)
+type CADiagramBackend b = (Data.Typeable.Internal.Typeable (N b), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b)
 
-class CA u a where
-  renderCA :: CADiagramConstraints b  => u a -> QDiagram b V2 (N b) Any
-  stepCell :: u a -> a
-
-
+class CA u where
+  renderCA :: CADiagramBackend b => u -> QDiagram b V2 (N b) Any
+  stepCell :: u -> Element u
 
 type Steps = Int
 
-mkCAGif :: (Comonad u, CA u a, CADiagramConstraints b) => u a -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
-mkCAGif ca stepsOut = V.toList $ V.zip renderedSteps (V.replicate stepsOut  (5 :: Int)) where
-    renderedSteps = fmap renderCA (us `using` parTraversable rseq)
-    stepUniv u = u =>> stepCell
-    us = V.iterateN stepsOut stepUniv ca
+mkCAGif :: (MonoComonad u, CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
+mkCAGif seed n = V.toList $ V.zip renderedSteps frameDurations where
+    renderedSteps = fmap renderCA (casteps `using` parTraversable rseq)
+    frameDurations = V.replicate n  (5 :: Int)
+    casteps = V.iterateN n (\u -> oextend stepCell u) seed
+
