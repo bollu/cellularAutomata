@@ -1,6 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
@@ -18,6 +16,7 @@ module Cellular (RingZipper(RingZipper),
             getUnivNeighbours,
             CADiagramBackend,
             CA(stepCell, renderCA),
+            Steps,
             mkCAGif) where
 
 
@@ -230,13 +229,13 @@ getUnivNeighbours univ = V.fromList $
 
 type CADiagramBackend b = (Data.Typeable.Internal.Typeable (N b), RealFloat (N b), Backend b V2 (N b), Renderable (Path V2 (N b)) b)
 
-class CA u where
+class MonoComonad u => CA u where
   renderCA :: CADiagramBackend b => u -> QDiagram b V2 (N b) Any
   stepCell :: u -> Element u
 
 type Steps = Int
 
-mkCAGif :: (MonoComonad u, CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
+mkCAGif :: (CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
 mkCAGif seed n = V.toList $ V.zip renderedSteps frameDurations where
     renderedSteps = fmap renderCA (casteps `using` parTraversable rseq)
     frameDurations = V.replicate n  (5 :: Int)

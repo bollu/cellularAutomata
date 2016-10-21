@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Cellular
+  exposed-modules:     Cellular, DeriveMonoComonadTH
   build-depends:       base >= 4.7 && < 5,
                        diagrams,
                        diagrams-core,
@@ -29,7 +29,8 @@ library
                        memoize,
                        vector-strategies,
                        parallel,
-                       mono-traversable
+                       mono-traversable,
+                       template-haskell
 
   default-language:    Haskell2010
 
