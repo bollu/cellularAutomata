@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Cyclic2D where
 import Cellular
 import Control.Comonad
@@ -12,23 +13,28 @@ import Data.Active
 import qualified Data.Vector as V
 import Data.Typeable.Internal
 import Data.MonoTraversable
+import DeriveMonoComonadTH
 
 data Cell = Cell { val :: Int, total :: Int }
 newtype Cyclic2D = Cyclic2D (Univ Cell)
+
+newtype NewInt = NewIntCon Int
 
 -- add auto deriving code so that if the inner structure inside newtype
 -- has comonad, then the outer structure can learn to derive monocomonad
 
 type instance Element (Cyclic2D) = Cell
 
+$(deriveMonoFunctor ''Cyclic2D)
+
 instance CA Cyclic2D where
   stepCell  = Cyclic2D.stepCell
   renderCA = Cyclic2D.renderCA
-
+{-
 instance MonoFunctor Cyclic2D where
   omap :: (Cell -> Cell) -> Cyclic2D -> Cyclic2D
   omap f (Cyclic2D u) = Cyclic2D (fmap f u)
-  
+-}  
 
 instance MonoComonad Cyclic2D where
   oextract :: Cyclic2D -> Cell
