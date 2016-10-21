@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module GameOfLife where
 
@@ -10,40 +11,50 @@ import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
 import qualified Data.Vector as V
+import Data.MonoTraversable
 
 data Cell = On | Off deriving(Eq)
 
-type Grid = Univ Cell
+newtype GameOfLife = GameOfLife (Univ Cell)
+type instance Element GameOfLife = Cell
 
-liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
+instance CA GameOfLife where
+  stepCell  = GameOfLife.stepCell
+  renderCA = GameOfLife.renderCA
 
-stepCell :: Grid -> Cell
-stepCell grid = 
+instance MonoFunctor GameOfLife where
+  omap f (GameOfLife u) = GameOfLife (fmap f u)
+  
+
+instance MonoComonad GameOfLife where
+  oextract (GameOfLife u) = extract u
+  oextend f (GameOfLife u) = GameOfLife $ u =>> (f . GameOfLife)
+
+
+liveNeighbourCount :: GameOfLife -> Int
+liveNeighbourCount (GameOfLife grid) = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
+
+stepCell :: GameOfLife -> Cell
+stepCell gol = 
     cell'
     where
         cell' = if numNeighbours > 3 then Off
                 else if numNeighbours < 2 then Off
                 else if cell == Off && numNeighbours == 3 then On
                 else cell
-        cell = extract grid 
-        numNeighbours = liveNeighbourCount $ grid
+        cell = oextract gol 
+        numNeighbours = liveNeighbourCount gol
                                 
 
-renderUniv :: Grid -> Diagram B
-renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
+renderCA :: CADiagramBackend b => GameOfLife -> QDiagram b V2 (N b) Any
+renderCA (GameOfLife (Univ grid)) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper grid))
 
 bool2cell :: Bool -> Cell
 bool2cell True = On
 bool2cell False = Off
 
-cellToDiagram :: Cell -> Diagram B
-cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
-cellToDiagram Off = (square 1 # fc (sRGB24read "#455A64"))
 
+cellToDiagram :: CADiagramBackend b => Cell -> QDiagram b V2 (N b) Any
+cellToDiagram On = square 1 # fc blue
+cellToDiagram Off = square 1 # fc white
 
-
--- gameOfLifeCA = Cellular.CellularAutomata {
---   Cellular.stepCell = GameOfLife.stepCell,
---    Cellular.renderUniv = GameOfLife.renderUniv
---}

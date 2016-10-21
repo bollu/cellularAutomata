@@ -9,6 +9,7 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.TwoD.Layout.Grid
 import Control.Monad
 import Data.Active
+import MaterialColors
 import qualified Data.Vector as V
 
 
@@ -34,9 +35,9 @@ renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap me
 
 
 cellToDiagram :: Cell -> Diagram B
-cellToDiagram On = (square 1 # fc (sRGB24read "#03A9F4"))
-cellToDiagram Dying = (square 1 # fc (sRGB24read "#455A64"))
-cellToDiagram Off = (square 1 # fc (sRGB24read "#202020"))
+cellToDiagram On = square 1 # fc blue
+cellToDiagram Dying = square 1 # fc gray
+cellToDiagram Off = square 1 # fc black
 
 
 --briansBrainCA = Cellular.CellularAutomata {
