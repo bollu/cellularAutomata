@@ -53,14 +53,12 @@ deriveMonoFunctor ty = do
   let (NormalC constyname [(_, (AppT (ConT comonad) (ConT inner)))]) =  con
 
   [d| type instance Element (constyname) = $(conT inner) |]
-
-  let innername = mkName "innervar"
   
+  let innername = mkName "innervar"
   let monoinst = [d| instance MonoFunctor $(conT ty)  where
-                       omap f $(patternMatchInner ty innername) =  $(conE ty ) $ fmap f $(varE innername) |] 
+                       omap f $(patternMatchInner constyname innername) =  $(conE constyname) $ fmap f $(varE innername) |] 
                       -- omap f new = (fmap f ($(getinner ty outertype tyCon) new)) |]
-  strings <- fmap (\x -> show $ ppr x) monoinst 
-  -- fail $ strings
+  strings <- fmap (\x -> show $ ppr x) monoinst
   monoinst
   
 
