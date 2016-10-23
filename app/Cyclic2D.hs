@@ -23,9 +23,9 @@ newtype NewInt = NewIntCon Int
 -- add auto deriving code so that if the inner structure inside newtype
 -- has comonad, then the outer structure can learn to derive monocomonad
 
-type instance Element (Cyclic2D) = Cell
+-- type instance Element (Cyclic2D) = Cell
 
-$(deriveMonoFunctor ''Cyclic2D)
+$(deriveMonoInstances ''Cyclic2D)
 
 instance CA Cyclic2D where
   stepCell  = Cyclic2D.stepCell
@@ -34,7 +34,6 @@ instance CA Cyclic2D where
 instance MonoFunctor Cyclic2D where
   omap :: (Cell -> Cell) -> Cyclic2D -> Cyclic2D
   omap f (Cyclic2D u) = Cyclic2D (fmap f u)
--}  
 
 instance MonoComonad Cyclic2D where
   oextract :: Cyclic2D -> Cell
@@ -42,6 +41,7 @@ instance MonoComonad Cyclic2D where
 
   oextend :: (Cyclic2D -> Cell) -> Cyclic2D -> Cyclic2D
   oextend f (Cyclic2D u) = Cyclic2D $ u =>> (f . Cyclic2D)
+-}
 
 stepCell :: Cyclic2D -> Cell
 stepCell (Cyclic2D s) =

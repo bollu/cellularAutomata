@@ -94,6 +94,11 @@ stepCell s =
 ```
 
 
+#### More to encode
+
+https://qlfiles.net/the-ql-files/next-nearest-neighbors-cellular-automata
+
+
 ### Design
 
 This is an exploration of the Haskell design space to create Cellular Automata.
@@ -106,8 +111,7 @@ This will be refactored into a library that allows one to create cellular automa
 specifying the ruleset and the way to draw a *single* cell. The library will extrapolate the data
 to allow rendering the entire grid.
 
-As of now, since it uses [diagrams](http://projects.haskell.org/diagrams/) with the `Cairo` backend to render, it is somewhat slow to
-create GIFs. I hope to improve this by writing a separate `OpenGL` backend sometime.
+
 
 ### Contributing
 
@@ -210,6 +214,7 @@ deriveMonoElement tnewtype telem = [d| type instance Element (tnewtype) = telem 
 -- Why can I use `tnewtype` as a "raw" value while I can't with `telem`?
 -- Why does `$(return telem)`  work while raw `telem` doesn't?
 ```
+
 
 ### License - MIT
 ```
