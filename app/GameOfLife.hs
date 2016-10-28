@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module GameOfLife where
 
@@ -12,24 +13,16 @@ import Control.Monad
 import Data.Active
 import qualified Data.Vector as V
 import Data.MonoTraversable
+import DeriveMonoComonadTH
 
 data Cell = On | Off deriving(Eq)
 
 newtype GameOfLife = GameOfLife (Univ Cell)
-type instance Element GameOfLife = Cell
+$(deriveMonoInstances ''GameOfLife)
 
 instance CA GameOfLife where
   stepCell  = GameOfLife.stepCell
   renderCA = GameOfLife.renderCA
-
-instance MonoFunctor GameOfLife where
-  omap f (GameOfLife u) = GameOfLife (fmap f u)
-  
-
-instance MonoComonad GameOfLife where
-  oextract (GameOfLife u) = extract u
-  oextend f (GameOfLife u) = GameOfLife $ u =>> (f . GameOfLife)
-
 
 liveNeighbourCount :: GameOfLife -> Int
 liveNeighbourCount (GameOfLife grid) = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
@@ -47,14 +40,9 @@ stepCell gol =
                                 
 
 renderCA :: CADiagramBackend b => GameOfLife -> QDiagram b V2 (N b) Any
-renderCA (GameOfLife (Univ grid)) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper grid))
-
-bool2cell :: Bool -> Cell
-bool2cell True = On
-bool2cell False = Off
-
+renderCA (GameOfLife univ) = univToDiagram cellToDiagram univ
 
 cellToDiagram :: CADiagramBackend b => Cell -> QDiagram b V2 (N b) Any
-cellToDiagram On = square 1 # fc blue
+cellToDiagram On = square 1 # fc cyan
 cellToDiagram Off = square 1 # fc white
 

@@ -17,6 +17,8 @@ module Cellular (RingZipper(RingZipper),
             CADiagramBackend,
             CA(stepCell, renderCA),
             Steps,
+            univToDiagram,
+            ringZipperToDiagram,
             mkCAGif) where
 
 
@@ -235,7 +237,17 @@ class MonoComonad u => CA u where
 
 type Steps = Int
 
-mkCAGif :: (CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, Int)]
+univToDiagram :: CADiagramBackend b => (a -> QDiagram b V2 (N b) Any) -> Univ a -> QDiagram b V2 (N b) Any
+univToDiagram cellToDiagram (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
+
+
+ringZipperToDiagram :: CADiagramBackend b => (a -> QDiagram b V2 (N b) Any) -> RingZipper a -> QDiagram b V2 (N b) Any
+ringZipperToDiagram  cellToDiagram r = hcat $ V.toList $ fmap cellToDiagram $ (mergeRingZipper r)
+
+
+type GifDelay = Int
+
+mkCAGif :: (CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, GifDelay)]
 mkCAGif seed n = V.toList $ V.zip renderedSteps frameDurations where
     renderedSteps = fmap renderCA (casteps `using` parTraversable rseq)
     frameDurations = V.replicate n  (5 :: Int)

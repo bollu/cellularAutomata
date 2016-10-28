@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module BriansBrain where
 
@@ -11,36 +13,40 @@ import Control.Monad
 import Data.Active
 import MaterialColors
 import qualified Data.Vector as V
+import Data.MonoTraversable
+import DeriveMonoComonadTH
 
 
 data Cell = On | Off | Dying deriving(Eq)
 
-type Grid = Univ Cell
 
-liveNeighbourCount :: Grid -> Int
-liveNeighbourCount grid = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
+newtype BriansBrain = BriansBrain (Univ Cell)
+$(deriveMonoInstances ''BriansBrain)
 
-stepCell :: Grid -> Cell
-stepCell grid =
+
+instance CA BriansBrain where
+  stepCell  = BriansBrain.stepCell
+  renderCA = BriansBrain.renderCA
+
+liveNeighbourCount :: BriansBrain -> Int
+liveNeighbourCount (BriansBrain grid) = V.sum $ fmap (\c -> if c == On then 1 else 0) (getUnivNeighbours grid)
+
+stepCell :: BriansBrain -> Cell
+stepCell (briansbrain)  =
     cell'
     where
         cell' = if cell == Off && numNeighbours == 2 then On
                 else if cell == On then Dying
                 else Off
-        cell = extract grid
-        numNeighbours = liveNeighbourCount $ grid
-
-renderUniv :: Grid -> Diagram B
-renderUniv (Univ univ) = gridCat $ V.toList $ fmap cellToDiagram $ join (fmap mergeRingZipper (mergeRingZipper univ))
+        cell = oextract briansbrain
+        numNeighbours = liveNeighbourCount $ briansbrain
 
 
-cellToDiagram :: Cell -> Diagram B
-cellToDiagram On = square 1 # fc blue
-cellToDiagram Dying = square 1 # fc gray
+renderCA :: CADiagramBackend b => BriansBrain -> QDiagram b V2 (N b) Any
+renderCA (BriansBrain grid) = univToDiagram cellToDiagram grid
+
+cellToDiagram :: CADiagramBackend b => Cell -> QDiagram b V2 (N b) Any
+cellToDiagram On = square 1 # fc cyan
+cellToDiagram Dying = square 1 # fc indigo
 cellToDiagram Off = square 1 # fc black
 
-
---briansBrainCA = Cellular.CellularAutomata {
---    Cellular.stepCell = BriansBrain.stepCell,
---    Cellular.renderUniv = BriansBrain.renderUniv
---}
