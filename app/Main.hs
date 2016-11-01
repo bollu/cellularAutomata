@@ -19,6 +19,7 @@ import qualified Seeds
 import qualified BriansBrain
 import qualified Cyclic1D 
 import qualified Cyclic2D 
+import qualified Heat1D 
 import System.Random
 
 
@@ -122,4 +123,32 @@ cyclic2DStartGrid = do
 
 cyclic2DMain = caMain "cyclic2d.gif" cyclic2DStartGrid 100
 
-main = cyclic1dMain
+-- Heat
+-- ====
+heat1dDim :: Int
+heat1dDim = 100
+
+{-
+heat1dGenerator :: IO Heat1D.Cell
+heat1dGenerator = do
+  newStdGen
+  val <- getStdRandom (randomR (0, cyclic1dTypes)) :: IO Float
+  return $ Heat1D.Cell val
+-}
+
+clampheat :: Float -> Float
+clampheat x = min (max x 0) 1
+
+heatfn :: Int -> Float
+heatfn x = normx
+          where
+            normx = (fromIntegral x) / (fromIntegral heat1dDim)
+
+heat1dStartGrid :: IO (Heat1D.Heat1D)
+heat1dStartGrid = do
+  let rz =  makeRingZipper heat1dDim (Heat1D.Cell . clampheat . heatfn)
+  return $ Heat1D.Heat1D rz
+
+heat1dMain = caMain "heat1d.gif" heat1dStartGrid 100
+
+main = heat1dMain

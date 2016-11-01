@@ -242,7 +242,7 @@ univToDiagram cellToDiagram (Univ univ) = gridCat $ V.toList $ fmap cellToDiagra
 
 
 ringZipperToDiagram :: CADiagramBackend b => (a -> QDiagram b V2 (N b) Any) -> RingZipper a -> QDiagram b V2 (N b) Any
-ringZipperToDiagram  cellToDiagram r = hcat $ V.toList $ fmap cellToDiagram $ (mergeRingZipper r)
+ringZipperToDiagram  cellToDiagram r = L.foldr1 (|||) (V.toList $ fmap cellToDiagram $ (mergeRingZipper r))
 
 
 type GifDelay = Int
