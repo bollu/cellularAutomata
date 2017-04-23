@@ -38,9 +38,9 @@ import Data.Typeable.Internal
 import Data.MonoTraversable
 
 data RingZipper a = RingZipper {
-    before :: Vector a,
+    before :: V.Vector a,
     focus  :: a,
-    after  :: Vector a
+    after  :: V.Vector a
 } deriving(Eq, Generic, NFData)
 
 instance Functor RingZipper where

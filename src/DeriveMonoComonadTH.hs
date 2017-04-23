@@ -48,7 +48,7 @@ deriveMonoInstances :: Name  -> Q[Dec]
 deriveMonoInstances newtypename = do
   (TyConI newtypedecl) <- reify newtypename
   con <- case newtypedecl of
-     NewtypeD _ _  _ con _ -> return con
+     NewtypeD _ _  _ _ con _ -> return con
      _ -> fail $ "deriveFunctor: |" ++ (show newtypename) ++ "| must be a newtype"
      
   let (NormalC newtypeconsname [(_, (AppT  (ConT comonad) (ConT inner)))]) =  con
