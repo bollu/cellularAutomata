@@ -125,7 +125,7 @@ If someone knows how to make GIF rendering faster, that would be of great help a
 As a college student, I write code for passion projects like this on my free time. 
 If you want to support me to see more stuff like this, please
 
-[![Support via Gratipay](https://cdn.rawgit.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.svg)](https://gratipay.com/bollu/)
+[![Support via Gratipay](https://cdn.combinatronics.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.svg)](https://gratipay.com/bollu/)
 
 
 ### Theory
