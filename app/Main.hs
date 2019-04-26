@@ -20,6 +20,7 @@ import qualified BriansBrain
 import qualified Cyclic1D 
 import qualified Cyclic2D 
 import qualified Heat1D 
+import qualified Rule
 import System.Random
 
 
@@ -146,9 +147,20 @@ heatfn x = normx
 
 heat1dStartGrid :: IO (Heat1D.Heat1D)
 heat1dStartGrid = do
-  let rz =  makeRingZipper heat1dDim (Heat1D.Cell . clampheat . heatfn)
+  let rz = makeRingZipper heat1dDim (Heat1D.Cell . clampheat . heatfn)
   return $ Heat1D.Heat1D rz
 
 heat1dMain = caMain "heat1d.gif" heat1dStartGrid 100
 
-main = heat1dMain
+rule30dim :: Int
+rule30dim = 100
+
+rule30StartGridAtCenter :: IO (Rule.Rule)
+rule30StartGridAtCenter = do
+  let rz =  makeRingZipper rule30dim (\i -> Rule.Cell 30 (i == rule30dim `quot` 2))
+  return $ Rule.Rule rz
+
+
+rule30Main = caMain "rule30.gif" rule30StartGridAtCenter 100
+
+main = rule30Main
