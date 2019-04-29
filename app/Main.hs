@@ -33,11 +33,17 @@ renderOpts outpath = let
               gifOpts = GifOpts {_dither = False, _noLooping = False, _loopRepeat = Nothing}
              in (diagramOpts, gifOpts) 
 
-caMain :: CA ca => FilePath -> IO ca -> Steps -> IO ()
-caMain outpath iostart nsteps = do
+caGifMain :: CA ca => FilePath -> IO ca -> Steps -> IO ()
+caGifMain outpath iostart nsteps = do
   start <- iostart
   gifMain $ (mkCAGif start nsteps)
   -- mainRender ((renderOpts outpath) :: MainOpts [(QDiagram Rasterific V2 n Any, Int)]) (mkCAGif start nsteps)
+  --
+caImageMain :: CA ca => FilePath -> IO ca -> Steps -> IO ()
+caImageMain outpath iostart nsteps = do
+  start <- iostart
+  defaultMain $ (mkCAImage start nsteps)
+
 
 -- Game of Life
 -- ============
@@ -55,7 +61,7 @@ golStartGrid = do
     return $ GameOfLife.GameOfLife univ  
 
 
-golMain = caMain "gameoflife.gif" golStartGrid 100
+golMain = caGifMain "gameoflife.gif" golStartGrid 100
 
 
 -- Brians Brain
@@ -80,7 +86,7 @@ briansStartGrid = do
   univ <- makeUnivM briansDim (const . const $ briansGenerator)
   return $ BriansBrain.BriansBrain univ
 
-briansBrainMain = caMain "briansBrain.gif" briansStartGrid 100
+briansBrainMain = caGifMain "briansBrain.gif" briansStartGrid 100
 
 --
 -- Cyclic 1D
@@ -100,7 +106,7 @@ cyclic1dStartGrid = do
   rz <- makeRingZipperM cyclic1dDim (const $ cyclic1dGenerator)
   return $ Cyclic1D.Cyclic1D rz
 
-cyclic1dMain = caMain "cyclic1d.gif" cyclic1dStartGrid 100
+cyclic1dMain = caGifMain "cyclic1d.gif" cyclic1dStartGrid 100
 
 
 -- Cyclic 2D
@@ -122,7 +128,7 @@ cyclic2DStartGrid = do
     univ <-  makeUnivM cyclic2dDim  (const . const $ cyclic2DGenerator)
     return $ Cyclic2D.Cyclic2D univ
 
-cyclic2DMain = caMain "cyclic2d.gif" cyclic2DStartGrid 100
+cyclic2DMain = caGifMain "cyclic2d.gif" cyclic2DStartGrid 100
 
 -- Heat
 -- ====
@@ -150,17 +156,53 @@ heat1dStartGrid = do
   let rz = makeRingZipper heat1dDim (Heat1D.Cell . clampheat . heatfn)
   return $ Heat1D.Heat1D rz
 
-heat1dMain = caMain "heat1d.gif" heat1dStartGrid 100
+heat1dMain = caGifMain "heat1d.gif" heat1dStartGrid 100
 
-rule30dim :: Int
-rule30dim = 100
+ruledim :: Int
+ruledim = 100
 
-rule30StartGridAtCenter :: IO (Rule.Rule)
-rule30StartGridAtCenter = do
-  let rz =  makeRingZipper rule30dim (\i -> Rule.Cell 30 (i == rule30dim `quot` 2))
+randbool :: IO Bool
+randbool = randomIO
+
+
+ruleStartGridAtCenter :: Int -> IO (Rule.Rule)
+ruleStartGridAtCenter ruleix = do
+  let rz =  makeRingZipper ruledim (\i -> Rule.Cell ruleix (i * 2 == ruledim))
   return $ Rule.Rule rz
 
 
-rule30Main = caMain "rule30.gif" rule30StartGridAtCenter 100
+ruleStartGridNotAtCenter :: Int -> IO (Rule.Rule)
+ruleStartGridNotAtCenter ruleix = do
+  let rz =  makeRingZipper ruledim (\i -> Rule.Cell ruleix (i * 2 /= ruledim))
+  return $ Rule.Rule rz
 
-main = rule30Main
+ruleRandomInit :: Int -> IO (Rule.Rule)
+ruleRandomInit ruleix = do
+  rz <-  makeRingZipperM ruledim (\i -> Rule.Cell <$> pure ruleix <*> randbool) 
+  return $ Rule.Rule rz
+
+-- generate 1 with `bias` probability and `0` with (1 - bias) probability
+randBoolBiased :: Float -> IO Bool
+randBoolBiased b = do
+    p <- randomIO
+    return $ p <= b
+
+-- create the rule CA iniitialized with a random ratio
+ruleRandomInitRatio :: Float -> Int -> IO (Rule.Rule)
+ruleRandomInitRatio b ruleix = do
+  rz <-  makeRingZipperM ruledim (\i -> Rule.Cell <$> pure ruleix <*> (randBoolBiased b)) 
+  return $ Rule.Rule rz
+
+rule184AtCenterMain = caImageMain "rule184.jpeg" (ruleStartGridAtCenter 184) 10
+rule184NotAtCenterMain = caImageMain "rule184.jpeg" (ruleStartGridNotAtCenter 184) 10
+
+rule184BiasPoint2 = caImageMain "rule184.jpeg" (ruleRandomInitRatio 0.2 184) 10
+rule184BiasPoint8 = caImageMain "rule184.jpeg" (ruleRandomInitRatio 0.8 184) 10
+
+-- Sierpinski triangle
+rule90FromCenter = caImageMain "rule-90-from-center.jpeg" (ruleStartGridAtCenter 90) 20
+
+
+rule90Random = caImageMain "rule-90-random.jpeg" (ruleRandomInitRatio 0.2 90) 20
+
+main = rule90Random

@@ -54,5 +54,5 @@ renderCA (Rule rz) = ringZipperToDiagram cellToDiagram rz
 
 
 cellToDiagram :: CADiagramBackend b => Cell -> QDiagram b V2 (N b) Any
-cellToDiagram Cell{b=False, ..}  = (rect 1 4# fc (sRGB24read "#1abc9c"))
-cellToDiagram Cell{b=True, ..} = (rect 1 4 # fc (sRGB24read "#f1c40f"))
+cellToDiagram Cell{b=False, ..}  = rect 8 8 # fc (sRGB24read "#000000") # lw none
+cellToDiagram Cell{b=True, ..} = rect 8 8 # fc (sRGB24read "#ffffff") # lw none

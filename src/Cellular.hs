@@ -19,7 +19,8 @@ module Cellular (RingZipper(RingZipper),
             Steps,
             univToDiagram,
             ringZipperToDiagram,
-            mkCAGif) where
+            mkCAGif,
+            mkCAImage) where
 
 
 import GHC.Generics (Generic)
@@ -247,9 +248,19 @@ ringZipperToDiagram  cellToDiagram r = L.foldr1 (|||) (V.toList $ fmap cellToDia
 
 type GifDelay = Int
 
+-- | Compose the states of the cellular automata into a gif
 mkCAGif :: (CA u, CADiagramBackend b) => u -> Steps -> [(QDiagram b V2 (N b) Any, GifDelay)]
 mkCAGif seed n = V.toList $ V.zip renderedSteps frameDurations where
     renderedSteps = fmap renderCA (casteps `using` parTraversable rseq)
     frameDurations = V.replicate n  (5 :: Int)
     casteps = V.iterateN n (\u -> oextend stepCell u) seed
+
+
+-- | compose the states of the cellular automata into a image by stacking
+-- | states vertically. 
+mkCAImage :: (CA u, CADiagramBackend b) => u -> Steps -> QDiagram b V2 (N b) Any
+mkCAImage seed n = vcat (V.toList renderedSteps)  where
+    renderedSteps = fmap renderCA (casteps `using` parTraversable rseq)
+    casteps = V.iterateN n (\u -> oextend stepCell u) seed
+
 
