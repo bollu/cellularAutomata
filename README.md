@@ -197,6 +197,27 @@ Comonad automatically updates every single `a`, to produce an updated `w b`.
 
 #### The `Store` comonad
 
+Now, we will show a particular comonad, the `Store`, which forms the underlying comonad for this implementation
+
+```hs
+data Store s a = Store {
+  sextract :: s -> a,
+  sval :: s
+}
+
+instance Functor (Store s) where
+   fmap f (Store xtract v) = Store (f . xtract) v
+   
+instance Comonad (Store s) where
+   extract :: Store s a -> a
+   extract (Store xtract v) = xtract v
+   
+   (>>=) :: Store s a -> (Store s a -> b) -> Store s b
+   store@(Store xtract v) >>= f = 
+       let b = f store
+           xtract' s = f (Store xtract s) 
+       in Store b xtract'
+```
 
 #### Weird Template Haskell stuff I've noticed
 
